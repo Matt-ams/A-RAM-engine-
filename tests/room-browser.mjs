@@ -90,7 +90,7 @@ try{
   name:'room-v3-preset.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(preset))
  });
  await page.waitForFunction(expected=>{
-  const el=document.querySelector('.roomCopyRow input[type=range]:last-of-type');
+  const el=document.querySelectorAll('.roomCopyRow input[type=range]')[2];
   return el&&Math.abs(Number(el.value)-expected)<.011;
  },preset.roomCopies[0].distance,{timeout:30000});
  await page.getByRole('button',{name:/ROOM V4.1 · CLASSIC/}).click();
