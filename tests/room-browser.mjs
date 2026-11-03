@@ -82,6 +82,17 @@ try{
  const preset=JSON.parse(readFileSync(await presetFile.path(),'utf8'));
  assert.equal(preset.version,3);assert.equal(preset.roomCopies.length,1);
  assert.equal(preset.enhancedRoom,true);
+ assert.equal(typeof preset.roomCopies[0].distance,'number');
+ const copyDistance=page.locator('.roomCopyRow input[type=range]').nth(2);
+ await copyDistance.focus();await copyDistance.press('End');
+ assert(Number(await copyDistance.inputValue())>preset.roomCopies[0].distance,'copy distance should change');
+ await page.locator('input[type=file][accept*=".json"]').setInputFiles({
+  name:'room-v3-preset.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(preset))
+ });
+ await page.waitForFunction(expected=>{
+  const el=document.querySelector('.roomCopyRow input[type=range]:last-of-type');
+  return el&&Math.abs(Number(el.value)-expected)<.011;
+ },preset.roomCopies[0].distance,{timeout:30000});
  await page.getByRole('button',{name:/ROOM V4.1 · CLASSIC/}).click();
  await page.getByRole('button',{name:/REBUILD ROOM BUS/}).click();
  await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:45000});
