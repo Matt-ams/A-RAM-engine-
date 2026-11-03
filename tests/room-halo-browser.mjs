@@ -5,15 +5,15 @@ import {fileURLToPath} from 'node:url';
 import {resolve,dirname} from 'node:path';
 import {chromium} from 'playwright';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4190','--strictPort'],{cwd:root,stdio:'ignore'});
+const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4299','--strictPort'],{cwd:root,stdio:'ignore'});
 let browser;
 try {
- let up=false;for(let i=0;i<70;i++){try{up=(await fetch('http://127.0.0.1:4190/')).ok;if(up)break}catch{}await new Promise(r=>setTimeout(r,250))}
+ let up=false;for(let i=0;i<70;i++){try{up=(await fetch('http://127.0.0.1:4299/')).ok;if(up)break}catch{}await new Promise(r=>setTimeout(r,250))}
  assert(up,'dev server not ready');
  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1366,height:950}});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('http://127.0.0.1:4190/',{waitUntil:'networkidle'});
+ await page.goto('http://127.0.0.1:4299/',{waitUntil:'networkidle'});
  const result=await page.evaluate(async()=>{
   const {renderCleanHalo}=await import('/src/audio/roomHalo.ts');
   const sr=44100,n=sr*2,beat=new AudioBuffer({length:n,numberOfChannels:2,sampleRate:sr}),lead=new AudioBuffer({length:n,numberOfChannels:1,sampleRate:sr});
