@@ -62,6 +62,8 @@ try{
  await inputs.nth(0).setInputFiles({name:'BEAT_44.wav',mimeType:'audio/wav',buffer:wav(44100,1.2,110,2)});
  await inputs.nth(1).setInputFiles({name:'LEAD_48.wav',mimeType:'audio/wav',buffer:wav(48000,1.7,220,1)});
  await page.getByRole('button',{name:/BUILD REAL STEM BUS/}).click();
+ await page.getByRole('button',{name:/ROOM V4.2 · ENHANCED/}).click();
+ await page.getByRole('button',{name:/REBUILD ROOM BUS/}).click();
  await page.locator('.roomDiagnostics').waitFor({timeout:45000});
  await page.getByRole('button',{name:/DUPLICATE LEAD/}).click();
  assert.match(await page.locator('.roomVersion span').innerText(),/PENDING/);
@@ -80,7 +82,7 @@ try{
  await page.getByRole('button',{name:/SAVE SETTINGS/}).click();
  const presetFile=await saved;
  const preset=JSON.parse(readFileSync(await presetFile.path(),'utf8'));
- assert.equal(preset.version,3);assert.equal(preset.roomCopies.length,1);
+ assert.equal(preset.version,4);assert.equal(preset.roomCopies.length,1);
  assert.equal(preset.enhancedRoom,true);
  assert.equal(typeof preset.roomCopies[0].distance,'number');
  const copyDistance=page.locator('.roomCopyRow input[type=range]').nth(2);

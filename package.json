@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test:dsp": "esbuild src/audio/dynamics.ts src/audio/denoise.ts src/audio/superboost.ts src/audio/studioQuality.ts --outdir=.dsp-test --format=esm --out-extension:.js=.mjs && node tests/dsp-smoke.mjs",
     "check": "tsc --noEmit && npm run test:dsp && vite build",
-    "test:room": "node tests/room-browser.mjs"
+    "test:room": "node tests/room-browser.mjs",
+    "test:halo": "node tests/room-halo-browser.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
