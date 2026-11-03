@@ -74,7 +74,7 @@ export async function renderEnhancedRoom(stems:Record<RoomStemKey,RoomStem>,p:Ro
  const sourceSeconds=Math.max(...all.map(x=>x.duration));
  const size=clamp(p.size,0,1),reflect=clamp(p.reflections,0,1),absorption=clamp(p.absorption,0,1);
  const monoHz=clamp(p.monoSubHz,75,180);
- const tailSeconds=reflect>0?.14+size*.25:0;
+ const tailSeconds=reflect>0?.22+size*.27:0;
  const length=Math.max(1,Math.ceil((sourceSeconds+tailSeconds)*sampleRate));
  const ctx=new OfflineAudioContext(2,length,sampleRate);
  let earlyReflections=0,copiesRendered=0,stereoHrtfSources=0;
