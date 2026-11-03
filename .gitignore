@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.dsp-test/
+.env
+.env.*
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.aac
+.DS_Store
