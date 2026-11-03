@@ -1,8 +1,11 @@
 /** Verifies wet-only ROOM HALO does not touch musical dry samples. */
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {resolve,dirname} from 'node:path';
 import {chromium} from 'playwright';
-const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4190','--strictPort'],{stdio:'ignore'});
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4190','--strictPort'],{cwd:root,stdio:'ignore'});
 let browser;
 try {
  let up=false;for(let i=0;i<70;i++){try{up=(await fetch('http://127.0.0.1:4190/')).ok;if(up)break}catch{}await new Promise(r=>setTimeout(r,250))}
