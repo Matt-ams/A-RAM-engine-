@@ -11,3 +11,27 @@
 .module small{display:block;line-height:1.55;color:#8b9aa5;margin-top:7px}
 .meters{grid-template-columns:repeat(auto-fit,minmax(94px,1fr))}
 @media(max-width:650px){.headline .badge{width:100%;min-width:0}.module h3 span{float:none;display:block;margin-top:4px}.modules{grid-template-columns:1fr}}
+
+/* ROOM V4.2 — transparent additions; legacy ROOM stage styling remains untouched. */
+.roomV42{margin:14px 0 20px;padding:14px;background:#0b1218;border:1px solid #3a4b56;border-radius:10px}
+.roomVersion{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.roomVersion button{padding:10px 12px;border:1px solid #34434c;background:#141b22;color:#a5b4bd;font:10px ui-monospace,monospace;letter-spacing:.04em;border-radius:4px;cursor:pointer}
+.roomVersion button.sel{background:#b3cbd6;color:#10191e;border-color:#d1e3ea}
+.roomVersion span{font:10px ui-monospace,monospace;margin-left:auto}
+.roomPending{color:#e7c68f}.roomReady{color:#91b9aa}
+.roomCaption{font:10px/1.6 ui-monospace,monospace;color:#8497a5;margin:13px 0}
+.roomKnobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.roomDistances{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:8px}
+.roomKnobs .control,.roomDistances .control{min-width:0}
+.roomDiagnostics{display:flex;flex-direction:column;gap:5px;margin-top:12px;background:#101c22;border:1px solid #334a57;border-radius:6px;padding:10px;font:10px/1.5 ui-monospace,monospace;color:#99b5c3}
+.roomDiagnostics b{color:#d4e5ef}
+.roomCopyControls{display:grid;gap:7px;margin-top:12px}
+.roomCopyRow{display:grid;grid-template-columns:120px repeat(3,minmax(105px,1fr)) auto;align-items:center;gap:12px;padding:9px;border:1px solid #31414a;background:#10191f;border-radius:6px;font:10px ui-monospace,monospace}
+.roomCopyRow label{display:block;min-width:0;color:#879ba9}
+.roomCopyRow input{display:block;width:100%;accent-color:#93b9c8}
+.roomCopyRow button{padding:8px 10px;border:1px solid #465760;background:#19242b;color:#bdcbd3;cursor:pointer}
+@media(max-width:960px){.roomKnobs,.roomDistances{grid-template-columns:repeat(2,minmax(0,1fr))}.roomCopyRow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.roomKnobs,.roomDistances,.roomCopyRow{grid-template-columns:minmax(0,1fr)}.roomVersion span{margin:8px 0 0}}
+
+.roomRebuild{display:block;width:100%;margin:8px 0 14px;padding:12px 14px;color:#06141a;background:#b3d5e4;border:1px solid #d4e9f1;border-radius:7px;font:700 11px ui-monospace,monospace;letter-spacing:.07em;cursor:pointer}
+.roomRebuild:disabled{opacity:.45;cursor:not-allowed}
