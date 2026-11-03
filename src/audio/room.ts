@@ -151,16 +151,25 @@ export async function renderEnhancedRoom(stems:Record<RoomStemKey,RoomStem>,p:Ro
  }
  const buffer=await ctx.startRendering();
  const l=buffer.getChannelData(0),r=buffer.getChannelData(1);
- // Full-band correlation guard; prevent advanced ROOM from creating additional severe anti-phase.
- let corr=correlation(buffer);
- if(corr<.03){
-  const reduction=clamp((.03-corr)*.5,.03,.35);
-  for(let i=0;i<buffer.length;i++){
-   const mid=(l[i]+r[i])*.5,side=(l[i]-r[i])*.5*(1-reduction);
-   l[i]=mid+side;r[i]=mid-side;
+ // Energy-aware mid/side safety. Attenuate SIDE only if it dominates MID;
+ // this preserves the mono sum and avoids a fixed %-trim that can leave anti-phase.
+ let corr=correlation(buffer),midEnergy=0,sideEnergy=0;
+ for(let i=0;i<buffer.length;i+=4){
+  const mid=(l[i]+r[i])*.5,side=(l[i]-r[i])*.5;
+  midEnergy+=mid*mid;sideEnergy+=side*side;
+ }
+ if(corr<.06&&sideEnergy>1e-12&&midEnergy>1e-12){
+  const sideScale=clamp(Math.sqrt(midEnergy/sideEnergy)*.93,.025,1);
+  if(sideScale<1){
+   for(let i=0;i<buffer.length;i++){
+    const mid=(l[i]+r[i])*.5,side=(l[i]-r[i])*.5*sideScale;
+    l[i]=mid+side;r[i]=mid-side;
+   }
   }
   corr=correlation(buffer);
  }
+ // Fully anti-phase stems with no MID cannot be reconstructed by spatial processing:
+ // expose the resulting correlation in diagnostics rather than invent musical data.
  let peak=0;for(let i=0;i<buffer.length;i++)peak=Math.max(peak,Math.abs(l[i]),Math.abs(r[i]));
  const gain=peak>.96?.96/peak:1;
  if(gain<1)for(let i=0;i<buffer.length;i++){l[i]*=gain;r[i]*=gain}
