@@ -32,3 +32,6 @@
 .roomCopyRow button{padding:8px 10px;border:1px solid #465760;background:#19242b;color:#bdcbd3;cursor:pointer}
 @media(max-width:960px){.roomKnobs,.roomDistances{grid-template-columns:repeat(2,minmax(0,1fr))}.roomCopyRow{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:580px){.roomKnobs,.roomDistances,.roomCopyRow{grid-template-columns:minmax(0,1fr)}.roomVersion span{margin:8px 0 0}}
+
+.roomRebuild{display:block;width:100%;margin:8px 0 14px;padding:12px 14px;color:#06141a;background:#b3d5e4;border:1px solid #d4e9f1;border-radius:7px;font:700 11px ui-monospace,monospace;letter-spacing:.07em;cursor:pointer}
+.roomRebuild:disabled{opacity:.45;cursor:not-allowed}
