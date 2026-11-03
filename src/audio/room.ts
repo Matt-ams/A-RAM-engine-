@@ -80,7 +80,7 @@ export async function renderEnhancedRoom(stems:Record<RoomStemKey,RoomStem>,p:Ro
  let earlyReflections=0,copiesRendered=0,stereoHrtfSources=0;
  for(const key of playing){
   const stem=stems[key],audio=stem.buffer!;
-  const copies=p.roomCopies.filter(c=>c.key===key&&Number.isFinite(c.pan)&&Number.isFinite(c.depth)).slice(0,8);
+  const copies=p.roomCopies.filter(c=>c.key===key&&Number.isFinite(c.pan)&&Number.isFinite(c.depth)).slice(0,4);
   const positions=[{pan:stem.pan,depth:p.roomDepth[key]??0,distance:p.roomDistance[key]??.25,primary:true},
    ...copies.map(c=>({pan:c.pan,depth:c.depth,distance:c.distance??p.roomDistance[key]??.25,primary:false}))];
   const normalization=1/(1+copies.length*.46);
