@@ -61,7 +61,9 @@ try{
  await page.getByRole('button',{name:/REBUILD ROOM BUS/}).click();
  await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:50000});
  // Replace a stem AFTER an active bus exists. The previous export must be invalidated.
- await inputs.nth(1).setInputFiles({name:'lead-new.wav',mimeType:'audio/wav',buffer:wav(280)});
+ await page.locator('.stemSourceManager summary').click();
+ const sourceInputs=page.locator('.stemSourceManager input[type=file]');
+ await sourceInputs.nth(1).setInputFiles({name:'lead-new.wav',mimeType:'audio/wav',buffer:wav(280)});
  await page.locator('.roomVersion span').filter({hasText:'PENDING'}).waitFor({timeout:12000});
  assert(await page.locator('button.export').isDisabled(),'replaced stem must invalidate export');
  await page.getByRole('button',{name:/ROOM V4.1 · CLASSIC/}).click();
