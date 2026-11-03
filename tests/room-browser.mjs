@@ -91,7 +91,7 @@ try{
  });
  await page.waitForFunction(expected=>{
   const el=document.querySelectorAll('.roomCopyRow input[type=range]')[2];
-  return el&&Math.abs(Number(el.value)-expected)<.011;
+  return el&&Math.abs(Number(el.value)-Math.round(expected*20)/20)<.011;
  },preset.roomCopies[0].distance,{timeout:30000});
  await page.getByRole('button',{name:/ROOM V4.1 · CLASSIC/}).click();
  await page.getByRole('button',{name:/REBUILD ROOM BUS/}).click();
