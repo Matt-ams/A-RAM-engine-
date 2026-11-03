@@ -35,3 +35,14 @@
 
 .roomRebuild{display:block;width:100%;margin:8px 0 14px;padding:12px 14px;color:#06141a;background:#b3d5e4;border:1px solid #d4e9f1;border-radius:7px;font:700 11px ui-monospace,monospace;letter-spacing:.07em;cursor:pointer}
 .roomRebuild:disabled{opacity:.45;cursor:not-allowed}
+
+/* V4.3: foreground fidelity with optional atmospheric wet-only returns. */
+.haloPanel{padding:14px;margin:10px 0;border:1px solid #51626d;background:#0c171d;border-radius:7px;display:grid;gap:8px}
+.haloPanel>b{font:700 11px ui-monospace,monospace;letter-spacing:.08em;color:#d1e1e9}
+.haloPanel p,.haloPanel small{font:10px/1.6 ui-monospace,monospace;color:#98a9b2}
+.haloPanel .control{max-width:480px}
+.haloPanel button{width:max-content;max-width:100%;cursor:pointer;border:1px solid #617782;background:#19242b;color:#cadce5;padding:9px;border-radius:4px;font:10px ui-monospace,monospace}
+.haloPanel button.sel{color:#0b151b;background:#c3d9e4}
+.module.disabled{opacity:.65}.module.disabled h3 span{color:#d0b48e}
+.roomV42,.haloPanel{overflow-anchor:none}
+.roomCopyRow button:disabled{opacity:.4;cursor:not-allowed}
