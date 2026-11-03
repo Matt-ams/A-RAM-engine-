@@ -41,9 +41,19 @@ try {
  assert(result.laterDiff>1e-6,'WET ambience should create a different tail');
  assert(result.finite&&result.sourceUnchanged);
  assert(result.wetDuration>result.dryDuration+.2);
+ await page.getByRole('button',{name:/STEMS/}).first().click();
+ const wav=(freq)=>{const sr=44100,n=44100,b=Buffer.alloc(44+n*4);b.write('RIFF',0);b.writeUInt32LE(b.length-8,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(2,22);b.writeUInt32LE(sr,24);b.writeUInt32LE(sr*4,28);b.writeUInt16LE(4,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(n*4,40);for(let i=0;i<n;i++){const v=Math.round(10000*Math.sin(2*Math.PI*freq*i/sr));b.writeInt16LE(v,44+i*4);b.writeInt16LE(v,46+i*4)}return b};
+ const files=page.locator('input[type=file][accept*="audio"]');
+ await files.nth(0).setInputFiles({name:'beat.wav',mimeType:'audio/wav',buffer:wav(110)});
+ await files.nth(1).setInputFiles({name:'lead.wav',mimeType:'audio/wav',buffer:wav(220)});
+ await page.getByRole('button',{name:/BUILD REAL STEM BUS/}).click();
+ await page.locator('.roomVersion').waitFor({timeout:30000});
  const buttons=await page.locator('.roomVersion button').allInnerTexts();
  assert(buttons.some(t=>t.includes('CLASSIC'))&&buttons.some(t=>t.includes('HALO'))&&buttons.some(t=>t.includes('ENHANCED')));
  assert((await page.locator('.roomVersion button.sel').innerText()).includes('CLASSIC'),'Default must be pristine Classic');
+ await page.getByRole('button',{name:/ROOM V4.3 · CENTER \+ HALO/}).click();
+ await page.getByRole('button',{name:/REBUILD ROOM BUS/}).click();
+ await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:30000});
  assert.equal(errors.length,0,errors.join(' / '));
  console.log('ROOM HALO PASS',JSON.stringify(result),buttons);
 }finally {await browser?.close();server.kill('SIGTERM')}
