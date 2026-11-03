@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {chromium} from 'playwright';
+import {chromium,webkit} from 'playwright';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4311','--strictPort'],{cwd:root,stdio:'ignore'});
 function wav(freq=160){
@@ -19,7 +19,7 @@ let browser;
 try{
  let ready=false;for(let i=0;i<100;i++){try{ready=(await fetch('http://127.0.0.1:4311/')).ok;if(ready)break}catch{}await new Promise(r=>setTimeout(r,250))}
  assert(ready,'Vite not ready');
- browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ browser=await (process.env.PLAYWRIGHT_BROWSER==='webkit'?webkit:chromium).launch({headless:true,args:process.env.PLAYWRIGHT_BROWSER==='webkit'?[]:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1440,height:860},acceptDownloads:true});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:4311/',{waitUntil:'networkidle'});
@@ -70,5 +70,16 @@ try{
  await page.getByRole('button',{name:/REBUILD ROOM BUS/}).click();
  await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:50000});
  assert.equal(errors.length,0,errors.join(' / '));
- console.log('ROOM V4.3.1 UI PASS',JSON.stringify({sliderScrollDelta:afterSlider-beforeSlider,dragScrollDelta:endScroll-startScroll,stemChangeInvalidates:true,classicRebuild:true}));
+ const mobile=await browser.newPage({viewport:{width:390,height:844}});
+ await mobile.goto('http://127.0.0.1:4311/',{waitUntil:'networkidle'});
+ await mobile.getByRole('button',{name:/STEMS/}).first().click();
+ const mobileInputs=mobile.locator('input[type=file][accept*="audio"]');
+ await mobileInputs.nth(0).setInputFiles({name:'beat.wav',mimeType:'audio/wav',buffer:wav(105)});
+ await mobileInputs.nth(1).setInputFiles({name:'lead.wav',mimeType:'audio/wav',buffer:wav(275)});
+ await mobile.getByRole('button',{name:/BUILD REAL STEM BUS/}).click();
+ await mobile.locator('.stemSourceManager summary').click();
+ const mobileSizes=await mobile.evaluate(()=>({viewport:document.documentElement.clientWidth,content:document.documentElement.scrollWidth}));
+ assert(mobileSizes.content<=mobileSizes.viewport+2,'mobile source manager overflows width');
+ await mobile.close();
+ console.log('ROOM V4.3.1 UI PASS',JSON.stringify({engine:process.env.PLAYWRIGHT_BROWSER??'chromium',sliderScrollDelta:afterSlider-beforeSlider,dragScrollDelta:endScroll-startScroll,stemChangeInvalidates:true,classicRebuild:true,mobileSizes}));
 }finally{await browser?.close();server.kill('SIGTERM')}
