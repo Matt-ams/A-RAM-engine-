@@ -56,3 +56,14 @@ html{scrollbar-gutter:stable}
 .roomRebuild:not(:disabled):focus-visible,.roomVersion button:focus-visible,.roomV42 input[type=range]:focus-visible{outline:2px solid #d2e8f4;outline-offset:3px}
 .roomRebuild:disabled{opacity:.55}
 @media(max-width:580px){.roomEditNotice{font-size:9px}}
+
+.stemSourceManager{margin:9px 0 13px;border:1px solid #30424b;background:#0d151a;border-radius:7px;overflow-anchor:none;padding:11px 13px}
+.stemSourceManager summary{font:700 10px ui-monospace,monospace;letter-spacing:.055em;color:#b7cfdd;cursor:pointer}
+.stemSourceManager p{margin:10px 0;color:#97a8b3;font:10px/1.55 ui-monospace,monospace}
+.stemSourceGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stemSourceGrid label{display:grid;gap:6px;min-width:0;padding:9px;border:1px solid #344956;border-radius:5px}
+.stemSourceGrid b{font:700 11px ui-monospace,monospace;color:#d9e4eb}
+.stemSourceGrid span{font:9px ui-monospace,monospace;color:#9cacb5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stemSourceGrid input{max-width:100%;color:#b3cbd6;font:10px ui-monospace,monospace}
+@media(max-width:780px){.stemSourceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:450px){.stemSourceGrid{grid-template-columns:minmax(0,1fr)}}
