@@ -13,7 +13,7 @@
 |---|---|
 | **Front/rear** | Independent front/back and azimuth position; browser PannerNode HRTF is used for mono stems, and two HRTF virtual emitters preserve independent L/R material for stereo stems. Front/rear also changes spectral attenuation/reflection cues. No claim of individualized HRTF, source separation, or Atmos. |
 | **Acoustic depth** | Separate per-stem **distance** slider, room **size**, reflection intensity and wall **absorption**. Geometric parameterization uses no-feedback early side-wall reflections and short scattered room taps. Direct musical transients stay time aligned. Not a physically measured impulse response or true ray tracing. |
-| **Copies / buildup** | Spatial copies get bounded gain (primary 1, copy .46, combined normalized); copies use 5–18 ms inter-copy timing offset plus all-pass coloration, and copied deep bass is removed from the duplicate paths. Individually editable pan, front/rear, and distance; removable; maximum 4 copies per stem. |
+| **Copies / buildup** | Spatial copies get bounded gain (primary 1, copy .46, combined normalized); copies use 6–13 ms inter-copy timing offset plus all-pass coloration, and copied deep bass is removed from the duplicate paths. Individually editable pan, front/rear, and distance; removable; maximum 4 copies per stem. |
 | **Frequency handling** | Mono-centered low-frequency contribution for each primary stem (75–180 Hz adjustable crossover); spatial mids/highs get independent directional/distance attenuation; rear and far stems get stronger high-frequency damping, reflections are high-passed and darkened. |
 | **Different sample rates** | Offline context at highest input sample rate capped at 96 kHz; all inputs are resampled automatically by Web Audio; **frame allocation is based on durations in seconds**, plus room reflection tail to prevent truncation. AudioContext decode usually normalizes files to a shared sample rate before rendering. |
 | **Mono/stereo and peaks** | Preserved stereo stem channels in HRTF mode via dual emitters; low end centered; measured output mid/side power automatically attenuates dangerous anti-phase side dominance without changing the mono mid sum; reports correlation and trims only peaks exceeding 0.96 linear. Unrecoverable fully anti-phase source material is flagged, not fabricated. |
@@ -28,7 +28,7 @@
 
 ## QA results (sandbox, headless Chromium)
 - **PASS** `npm run check`: TypeScript, original DSP smoke tests, Vite production build.
-- **PASS** `npm run test:room`: real Web Audio render with 44.1/48 kHz buffers, HRTF mono/stereo, copies, peak and finite-sample checks, audio source immutability, room rebuild/dirty UI, PCM WAV download, preset v3, Classic fallback, zero unhandled page errors.
+- **PASS** `npm run test:room`: real Web Audio render with 44.1/48 kHz buffers, HRTF mono/stereo, copies, peak and finite-sample checks, audio source immutability, room rebuild/dirty UI, PCM WAV download, preset v3 including copied-stem distance save/load, Classic fallback, zero unhandled page errors.
 - **PASS** separate mobile viewport 390px: document width remained 390px.
 - Confirmed full legacy ROOM mixer source unchanged; backup branch verified before development.
 - **NOT YET** TT2/TT3 headphone nearfield subjective QA; Safari on Mac; long-duration 48/96k CPU/memory benchmarks.
