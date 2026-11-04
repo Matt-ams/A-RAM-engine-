@@ -16,7 +16,8 @@
     "test:preset:v5": "node tests/preset-v5-browser.mjs",
     "test:preset:audio": "node tests/preset-audio-integrity-browser.mjs",
     "test:orbits": "node tests/rear-orbits-browser.mjs",
-    "test:export-match": "node tests/export-match-playback-browser.mjs"
+    "test:export-match": "node tests/export-match-playback-browser.mjs",
+    "test:stale-export": "node tests/stale-audition-export-browser.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
