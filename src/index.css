@@ -185,3 +185,17 @@ html{scrollbar-gutter:stable}
 .exportParity>div b{color:#d3e8eb;font:800 11px/1.6 ui-monospace,monospace;letter-spacing:.04em}
 .exportParity>div span{color:#aac1c8;font:10px/1.55 ui-monospace,monospace}
 @media(max-width:650px){.exportParity{flex-direction:column;align-items:stretch}.exportParity button{width:100%}}
+
+/* Verified export diagnostic. Display-only, never a signal processing stage. */
+.exportAuditPanel{display:grid;gap:9px;padding:16px;margin:12px 0;border:1px solid #445b6b;background:#121b24;border-radius:9px}
+.exportAuditPanel>b{font:800 11px ui-monospace,monospace;letter-spacing:.1em;color:#d4e9f2}
+.exportAuditPanel>p{margin:0;color:#aac2ce;font:11px/1.6 ui-monospace,monospace}
+.exportAuditUpload{position:relative;align-self:start;padding:11px 16px;border:1px solid #7b98a4;border-radius:5px;background:#253746;color:#ecf8fa;font:800 10px ui-monospace,monospace;cursor:pointer;overflow:hidden}
+.exportAuditUpload input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.exportAuditUpload:focus-within{outline:2px solid #e2f8f8;outline-offset:3px}
+.exportAuditResult{display:grid;gap:5px;padding:11px 13px;border-radius:5px;border:1px solid #607487;background:#1c2933}
+.exportAuditResult.pass{border-color:#588c8c}
+.exportAuditResult.fail{border-color:#a37867}
+.exportAuditResult strong{font:800 10px ui-monospace,monospace;color:#e5f1f2}
+.exportAuditResult span{font:10px/1.55 ui-monospace,monospace;color:#c1d0d8}
+.exportAuditError{padding:9px 11px;border:1px solid #a37867;color:#f5b7a7;background:#291e22;border-radius:4px}
