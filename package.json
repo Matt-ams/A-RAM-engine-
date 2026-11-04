@@ -11,7 +11,8 @@
     "check": "tsc --noEmit && npm run test:dsp && vite build",
     "test:room": "node tests/room-browser.mjs",
     "test:halo": "node tests/room-halo-browser.mjs",
-    "test:room:ux": "node tests/room-ux-browser.mjs"
+    "test:room:ux": "node tests/room-ux-browser.mjs",
+    "test:audio:recovery": "node tests/audio-recovery-browser.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
