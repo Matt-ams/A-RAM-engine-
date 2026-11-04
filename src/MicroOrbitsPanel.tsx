@@ -38,7 +38,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
   if(prev.length>=12)return prev;
   const at=Math.round(clamp(playhead,0,Math.max(0,mix.duration-.8))*100)/100;
   const source=availableSources[0]??'mix';
-  const duration=source==='mix'?.32:source==='lead'?.42:.55;
+  const duration=source==='mix'?.45:source==='lead'?.85:.9;
   const id=Math.max(Date.now(),...prev.map(e=>e.id+1));
   setSelectedId(id);
   const event:OrbitEvent={id,source,at,duration,path:'front-to-rear-left',band:source==='lead'?'voice':'detail',level:.75};return [...prev,event].sort((a,b)=>a.at-b.at);
@@ -111,12 +111,12 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
     <label>SOURCE<select aria-label='Orbit event source' value={selected.source} onChange={e=>updateEvent({source:e.target.value as OrbitSource,band:e.target.value==='lead'?'voice':'detail'})}>{availableSources.map(s=><option value={s} key={s}>{s==='mix'?'STEREO / ROOM MIX · FILTERED':s.toUpperCase()}</option>)}</select></label>
     <label>ROUTE<select aria-label='Orbit event route' value={selected.path} onChange={e=>updateEvent({path:e.target.value as OrbitPath})}>{paths.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
     <label>DETAIL BAND<select aria-label='Orbit event band' value={selected.band} onChange={e=>updateEvent({band:e.target.value as OrbitBand})}><option value='detail'>BRIGHT DETAIL</option><option value='voice'>VOCAL PRESENCE</option></select></label>
-    <label>START · {selected.at.toFixed(2)}s<input aria-label='Orbit event time' type='range' min='0' max={Math.max(.1,mix.duration-1.2)} step='.05' value={selected.at} onChange={e=>updateEvent({at:Number(e.target.value)})}/></label>
-    <label>DURATION · {selected.duration.toFixed(2)}s<input aria-label='Orbit event duration' type='range' min='.15' max='1.20' step='.05' value={selected.duration} onChange={e=>updateEvent({duration:Number(e.target.value)})}/></label>
+    <label>START · {selected.at.toFixed(2)}s<input aria-label='Orbit event time' type='range' min='0' max={Math.max(.1,mix.duration-.15)} step='.05' value={selected.at} onChange={e=>updateEvent({at:Number(e.target.value)})}/></label>
+    <label>DURATION · {selected.duration.toFixed(2)}s<input aria-label='Orbit event duration' type='range' min='.15' max='2.40' step='.05' value={selected.duration} onChange={e=>updateEvent({duration:Number(e.target.value)})}/></label>
     <label>EVENT LEVEL · {Math.round(selected.level*100)}%<input aria-label='Orbit event level' type='range' min='0' max='100' step='5' value={selected.level*100} onChange={e=>updateEvent({level:Number(e.target.value)/100})}/></label>
    </div>
    <button className='orbitRemove' onClick={()=>{setEvents(es=>es.filter(e=>e.id!==selected.id));setSelectedId(null)}}>REMOVE SELECTED DETAIL</button>
-  </div>:<div className='orbitEmpty'>No orbit events. Mark a specific “hola” moment with the playhead, or run SMART SCOUT for suggested short fragments.</div>}
+  </div>:<div className='orbitEmpty'>No orbit events. Place a short vocal accent at the playhead, then choose a real FRONT / REAR route, or let SMART SCOUT suggest moments.</div>}
   <div className='orbitFooter'>
    <span>{settings.enabled?'ON · ORBIT WET LAYER INCLUDED IN NEXT MASTER RENDER':'OFF · ORIGINAL AUDIO PIPELINE BYPASSED EXACTLY'}</span>
    {originalLock&&<b>ORIGINAL LOCK IS ON — ORBITS WILL NOT ENTER LOCKED EXPORT</b>}
