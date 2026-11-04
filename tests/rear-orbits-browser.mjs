@@ -98,7 +98,7 @@ try{
  const miniSeek=page.getByRole('slider',{name:'Orbit synced timeline seek'});
  await miniSeek.fill('1.25');
  assert(Math.abs(Number(await mainSeek.inputValue())-1.25)<.02,'Orbit seek and main seek are the same transport clock');
- assert(Math.abs(Number((await page.locator('[data-testid=orbit-synced-playhead]').getAttribute('style')).match(/left:\\s*([\d.]+)%/)?.[1]??0)-1.25/3*100)<1,'mini cursor follows main playhead');
+ assert(Math.abs(Number((await page.locator('[data-testid=orbit-synced-playhead]').getAttribute('style')).match(/left:\s*([\d.]+)%/)?.[1]??0)-1.25/3*100)<1,'mini cursor follows main playhead');
  await panel.getByRole('button',{name:'Play from Orbit timeline'}).click();
  await panel.getByRole('button',{name:'Pause from Orbit timeline'}).waitFor({timeout:20000});
  await page.waitForTimeout(120);
