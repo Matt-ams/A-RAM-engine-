@@ -175,3 +175,13 @@ html{scrollbar-gutter:stable}
 .orbitVoiceProtect{align-items:center;grid-template-columns:minmax(140px,.9fr) minmax(170px,1.1fr);background:#131f2a;border:1px solid #3d5368;border-radius:7px;padding:10px}
 .orbitVoiceProtect small{font:10px/1.5 ui-monospace,monospace;color:#a2bdcb}
 @media(max-width:600px){.orbitMiniTransport span{width:100%;text-align:left}.orbitMiniWave{height:65px}.orbitMiniWave svg{height:52px}.orbitVoiceProtect{grid-template-columns:1fr}.orbitMiniRuler small:nth-child(2){display:none}}
+
+/* Export vs audition parity: fully separate from PCM algorithms and ROOM CSS. */
+.exportParity{display:flex;gap:14px;align-items:center;background:#14252a;border:1px solid #4b7980;border-radius:9px;padding:13px 16px;margin:12px 0}
+.exportParity button{flex:0 0 auto;border:1px solid #78969f;border-radius:5px;background:#182c36;color:#b8d4de;padding:13px 15px;font:800 11px ui-monospace,monospace;letter-spacing:.08em;cursor:pointer}
+.exportParity button.selected{background:#a6e0dc;color:#133131;border-color:#e1f4f0}
+.exportParity button:focus-visible{outline:2px solid #e1ffff;outline-offset:2px}
+.exportParity>div{display:grid;gap:5px;min-width:0}
+.exportParity>div b{color:#d3e8eb;font:800 11px/1.6 ui-monospace,monospace;letter-spacing:.04em}
+.exportParity>div span{color:#aac1c8;font:10px/1.55 ui-monospace,monospace}
+@media(max-width:650px){.exportParity{flex-direction:column;align-items:stretch}.exportParity button{width:100%}}
