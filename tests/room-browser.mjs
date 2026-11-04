@@ -82,7 +82,7 @@ try{
  await page.getByRole('button',{name:/SAVE SETTINGS/}).click();
  const presetFile=await saved;
  const preset=JSON.parse(readFileSync(await presetFile.path(),'utf8'));
- assert.equal(preset.version,5);assert.equal(preset.roomCopies.length,1);
+ assert.equal(preset.version,6);assert.equal(preset.roomCopies.length,1);
  assert.equal(preset.enhancedRoom,true);
  assert.equal(typeof preset.roomCopies[0].distance,'number');
  const copyDistance=page.locator('.roomCopyRow input[type=range]').nth(2);

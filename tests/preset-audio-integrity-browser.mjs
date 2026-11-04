@@ -34,7 +34,7 @@ try{
  await page.getByRole('button',{name:/SUPERBOOST OFF/}).click();
  await page.waitForFunction(()=>{const b=document.querySelector('button.export');return b&&!b.hasAttribute('disabled')},null,{timeout:90000});
  assert((await page.getByRole('button',{name:/SUPERBOOST ON/}).count())===1,'Superboost enabled visibly');
- const first=page.waitForEvent('download');await page.getByRole('button',{name:/SAVE SETTINGS · V5/}).click();
+ const first=page.waitForEvent('download');await page.getByRole('button',{name:/SAVE SETTINGS · V6/}).click();
  const preset=JSON.parse(await readFile(await (await first).path(),'utf8'));
  assert.equal(preset.superboostOn,true);assert.equal(preset.bypass.space,false);assert.equal(preset.haloMode,true);
  const expA=page.waitForEvent('download');await page.locator('button.export').click();const pcmA=await readFile(await (await expA).path());
@@ -61,7 +61,7 @@ try{
  assert.equal(await page.getByRole('button',{name:/SUPERBOOST ON · BLOCKED BY SPACE BYPASS/}).count(),1);
  assert(await page.getByText(/SUPERBOOST IS SAVED ON BUT INAUDIBLE/).count()>0);
  assert((await page.locator('.signalAudit').innerText()).includes('BLOCKED BY SPACE BYPASS'));
- const blocked=page.waitForEvent('download');await page.getByRole('button',{name:/SAVE SETTINGS · V5/}).click();const blockedPreset=JSON.parse(await readFile(await (await blocked).path(),'utf8'));
+ const blocked=page.waitForEvent('download');await page.getByRole('button',{name:/SAVE SETTINGS · V6/}).click();const blockedPreset=JSON.parse(await readFile(await (await blocked).path(),'utf8'));
  assert.equal(blockedPreset.superboostOn,true);assert.equal(blockedPreset.bypass.space,true);
  await page.getByRole('button',{name:/NEW SESSION/}).click();await page.getByRole('button',{name:/STEMS/}).first().click();
  await page.locator('.earlyPresetLoader input[type=file]').setInputFiles({name:'blocked-v5.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(blockedPreset))});
