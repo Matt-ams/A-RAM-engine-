@@ -84,7 +84,7 @@ export function scoutMicroOrbits(mix:AudioBuffer,stems:OrbitStemMap,mode:'stems'
  * Keyframes intentionally describe actual front/rear motion, not just pan.
  * All trajectories are local wet reflections and never reposition original stems.
  */
-const positions=(path:OrbitPath,rear:number,strength:number):Array<[number,number]>=>{
+export const orbitPathPositions=(path:OrbitPath,rear:number,strength:number):Array<[number,number]>=>{
  const x=0.85+0.9*clamp(strength,0,1),zFront=-(.8+.9*clamp(strength,0,1));
  const zRear=.8+1.35*clamp(rear,0,1)*(.65+.35*clamp(strength,0,1));
  const rearLeft:[number,number]=[-x,zRear],rearRight:[number,number]=[x,zRear];
@@ -140,7 +140,7 @@ export async function renderMicroOrbits(
   fragment.connect(highpass).connect(lowpass).connect(env);
   // Energy deliberately bounded. The direct beat/lead and ROOM dry are untouched.
   const level=clamp(settings.amount,0,1)*clamp(event.level,0,1)*.19*(event.source==='mix'?.46:event.source==='lead'?.80:1);
-  const coords=positions(event.path,settings.rear,settings.motion??orbitDefaults.motion??.75);
+  const coords=orbitPathPositions(event.path,settings.rear,settings.motion??orbitDefaults.motion??.75);
   const rear=ctx.createDelay(.18);rear.delayTime.value=.028+settings.rear*.032;
   const gain=ctx.createGain();gain.gain.value=level;
   env.connect(rear).connect(gain);
