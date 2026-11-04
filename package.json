@@ -14,7 +14,8 @@
     "test:room:ux": "node tests/room-ux-browser.mjs",
     "test:audio:recovery": "node tests/audio-recovery-browser.mjs",
     "test:preset:v5": "node tests/preset-v5-browser.mjs",
-    "test:preset:audio": "node tests/preset-audio-integrity-browser.mjs"
+    "test:preset:audio": "node tests/preset-audio-integrity-browser.mjs",
+    "test:orbits": "node tests/rear-orbits-browser.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
