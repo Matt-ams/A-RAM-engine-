@@ -52,6 +52,17 @@ try{
  await panel.getByRole('button',{name:/\+ DETAIL AT PLAYHEAD/}).click();
  await panel.getByRole('slider',{name:'Orbit event time'}).fill('0.65');
  await panel.getByRole('slider',{name:'Orbit event duration'}).fill('0.8');
+ // While Orbits is OFF, events and their settings do not affect PCM and must not
+ // stop normal playback or disable the previously verified export.
+ await page.waitForFunction(()=>{const b=document.querySelector('button.export');return b&&!b.hasAttribute('disabled')},null,{timeout:90000});
+ await page.getByRole('button',{name:'Play audio'}).click();
+ await page.getByRole('button',{name:'Pause audio'}).waitFor({timeout:10000});
+ await panel.getByRole('slider',{name:'Orbit event time'}).fill('0.75');
+ await panel.getByRole('slider',{name:'Orbit rear depth'}).fill('65');
+ assert.equal(await page.getByRole('button',{name:'Pause audio'}).count(),1,'inactive Orbit metadata edits must not stop approved B playback');
+ assert.equal(await page.locator('button.export').isDisabled(),false,'inactive Orbit edits must not disable export');
+ await page.getByRole('button',{name:'Pause audio'}).click();
+ await panel.getByRole('slider',{name:'Orbit event time'}).fill('0.65');
  await panel.getByRole('button',{name:'ORBIT ENGINE · OFF'}).click();
  await page.getByRole('slider',{name:'Orbit wet intensity'}).fill('20');
  const readyForExport=()=>page.waitForFunction(()=>{const b=document.querySelector('button.export');return b&&!b.hasAttribute('disabled')},null,{timeout:90000});
@@ -86,5 +97,5 @@ try{
  assert.equal(await page.locator('button.export').isDisabled(),true);
  await readyForExport();
  assert.equal(errors.length,0,errors.join(' / '));
- console.log('STALE ORBIT AUDITION / EXPORT QA PASS',JSON.stringify({browser:engine===webkit?'webkit':'chromium',oldStopped:true,exportBlockedDuringRender:true,oldExportRejectedByVerifier:true,newExportMatched:true,max24bitDifference:max,changedExport:true}));
+ console.log('STALE ORBIT AUDITION / EXPORT QA PASS',JSON.stringify({browser:engine===webkit?'webkit':'chromium',inertEventsKeepPlayback:true,oldStopped:true,exportBlockedDuringRender:true,oldExportRejectedByVerifier:true,newExportMatched:true,max24bitDifference:max,changedExport:true}));
 }finally{await browser?.close();server.kill('SIGTERM')}
