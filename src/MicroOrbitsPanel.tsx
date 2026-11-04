@@ -38,7 +38,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
   const duration=source==='mix'?.32:source==='lead'?.42:.55;
   const id=Math.max(Date.now(),...prev.map(e=>e.id+1));
   setSelectedId(id);
-  return [...prev,{id,source,at,duration,path:'left-rear-right',band:source==='lead'?'voice':'detail',level:.75}].sort((a,b)=>a.at-b.at);
+  const event:OrbitEvent={id,source,at,duration,path:'left-rear-right',band:source==='lead'?'voice':'detail',level:.75};return [...prev,event].sort((a,b)=>a.at-b.at);
  })};
  const scan=()=>{const proposals=scoutMicroOrbits(mix,stems,mode,7);
   setEvents(proposals);setSelectedId(proposals[0]?.id??null);
