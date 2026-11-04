@@ -116,7 +116,9 @@ try{
  await panel.getByRole('button',{name:/3D HRTF/}).click();
  await panel.getByRole('button',{name:'ORBIT ENGINE · OFF'}).click();
  assert.equal(await panel.getByRole('button',{name:'ORBIT ENGINE · ON'}).count(),1);
- await page.waitForFunction(()=>{const e=document.querySelector('button.export');return e&&!e.hasAttribute('disabled')},null,{timeout:90000});
+ try{await page.waitForFunction(()=>{const e=document.querySelector('button.export');return e&&!e.hasAttribute('disabled')},null,{timeout:90000})}catch(e){
+  console.log('ORBIT RENDER DEBUG',JSON.stringify({status:await page.locator('.signalAudit').innerText(),err:await page.locator('.error').allInnerTexts(),orbit:await panel.getByRole('button',{name:/ORBIT ENGINE/}).allInnerTexts(),exportDisabled:await page.locator('button.export').isDisabled(),room:await page.locator('.roomVersion').innerText()}));throw e
+ }
  const after=page.waitForEvent('download',{timeout:30000});await page.locator('button.export').click();const orbitWav=await readFile(await (await after).path());
  assert.equal(orbitWav.length,baseline.length,'Orbit output remains same PCM length');
  assert(!orbitWav.equals(baseline),'ON with proposed events must create changed WAV');
