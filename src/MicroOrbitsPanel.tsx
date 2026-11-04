@@ -69,6 +69,11 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
  const rearPath=svgPath(points);
  const begin=points[0],end=points[points.length-1];
  const screenPoint=([x,z]:[number,number])=>({x:240+x*65,y:127+z*44});
+ // Cursor and moving dot use exactly the same clock as the upper playback transport.
+ const highlighted=selected&&playhead>=selected.at&&playhead<selected.at+selected.duration;
+ const eventProgress=selected?clamp((playhead-selected.at)/Math.max(.001,selected.duration),0,1):0;
+ const section=eventProgress*(points.length-1),pointIndex=Math.min(points.length-2,Math.floor(section)),blend=section-pointIndex;
+ const motionPoint=screenPoint([points[pointIndex][0]*(1-blend)+points[pointIndex+1][0]*blend,points[pointIndex][1]*(1-blend)+points[pointIndex+1][1]*blend]);
  return <section className='orbitLab' aria-label='Rear Orbits Micro Events'>
   <header className='orbitHead'>
    <div><p className='orbitEyebrow'>OPTIONAL POST-ROOM EXPERIMENT · WET ONLY</p><h2>REAR ORBITS <span>FRONT / REAR · SENSORIAL MICRO-SWEEPS</span></h2><p>Animate short vocal fragments across the front, around an ear, and behind the head. The main BEAT, direct LEAD, and existing ROOM stay anchored.</p></div>
@@ -90,13 +95,13 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
      <path d={rearPath} fill='none' stroke='url(#orbit-v44-trail)' strokeWidth='4' strokeLinecap='round'/>
      <circle cx={screenPoint(begin).x} cy={screenPoint(begin).y} r='6' fill='#bce7e9'/>
      <circle cx={screenPoint(end).x} cy={screenPoint(end).y} r='6' fill='#e3b4ee'/>
-     <circle r='5' fill='#c9f0f2' opacity='.9'><animateMotion dur={`${Math.max(.6,selected?.duration??1)*2}s`} repeatCount='indefinite' path={rearPath}/></circle>
+     <circle cx={motionPoint.x} cy={motionPoint.y} r={highlighted?7:4} fill='#c9f0f2' opacity={highlighted?1:.3}/>
      <text x='240' y='22' fill='#9ec0cb' textAnchor='middle' fontSize='11' fontFamily='monospace'>FRONT / DRY ANCHOR</text>
      <text x='240' y='263' fill='#c6b3dc' textAnchor='middle' fontSize='11' fontFamily='monospace'>BEHIND · WET REFLECTIONS</text>
      <text x='94' y='92' fill='#a3c0cf' textAnchor='middle' fontSize='11' fontFamily='monospace'>LEFT EAR</text>
      <text x='389' y='92' fill='#a3c0cf' textAnchor='middle' fontSize='11' fontFamily='monospace'>RIGHT EAR</text>
     </svg>
-    <small>Animated trajectory is illustrative. Audio uses matching 3D front/back keyframes, but actual perception depends on headphones, ears and browser HRTF.</small>
+    <small>Position dot follows the same song playhead as the mini waveform when the selected event is active. 3D HRTF perception still depends on headphones and the listener.</small>
    </div>
    <div className='orbitWorkbench'>
     <div className='orbitControls'>
