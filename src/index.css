@@ -92,3 +92,10 @@ html{scrollbar-gutter:stable}
 .stemManageMix .control input[type=range]{width:100%;min-width:0}
 .stemManageMix .ms{display:flex;gap:4px;flex-wrap:wrap}
 .stemManageMix .ms button{flex:1;min-width:46px}
+
+/* V5 audio integrity and preset recall diagnostics: purely visual */
+.signalAudit{margin:13px 0;padding:11px 14px;border:1px solid #4f7381;background:#101d26;border-radius:8px;display:grid;gap:7px;min-width:0}
+.signalAudit strong{font:800 10px ui-monospace,monospace;letter-spacing:.1em;color:#cce5f2}
+.signalAudit span{font:10px/1.6 ui-monospace,monospace;letter-spacing:.015em;color:#abc4d1}
+.signalAudit b{color:#f0c7a3;font:700 10px/1.6 ui-monospace,monospace}
+.effectBlocked{display:block;padding:7px 10px;margin:7px 0;border:1px solid #99724e;border-radius:5px;color:#f5c89c!important;background:#261b13;font:10px/1.5 ui-monospace,monospace}
