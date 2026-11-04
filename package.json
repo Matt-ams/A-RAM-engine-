@@ -13,7 +13,8 @@
     "test:halo": "node tests/room-halo-browser.mjs",
     "test:room:ux": "node tests/room-ux-browser.mjs",
     "test:audio:recovery": "node tests/audio-recovery-browser.mjs",
-    "test:preset:v5": "node tests/preset-v5-browser.mjs"
+    "test:preset:v5": "node tests/preset-v5-browser.mjs",
+    "test:preset:audio": "node tests/preset-audio-integrity-browser.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
