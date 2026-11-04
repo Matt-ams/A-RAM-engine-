@@ -75,3 +75,20 @@ html{scrollbar-gutter:stable}
 .transport .repairAudioButton:disabled{opacity:.5;cursor:progress}
 .transport .audioStateNotice{color:#f1c69b;font:700 10px ui-monospace,monospace;letter-spacing:.02em}
 @media(max-width:700px){.transport{flex-wrap:wrap}.transport .repairAudioButton{font-size:9px}}
+
+/* V5 preset: restored original STEM mixer and pre-build session import. */
+.earlyPresetLoader{display:grid;gap:8px;margin:12px 0;padding:13px;border:1px solid #3e5562;border-radius:7px;background:#101c23;max-width:800px;text-align:left;overflow-anchor:none}
+.earlyPresetLoader>.preset{max-width:100%}
+.earlyPresetLoader label.preset{border:1px solid #567481;background:#1a303b;border-radius:6px;padding:10px 12px;cursor:pointer}
+.earlyPresetLoader label.preset b{display:block;font:700 11px/1.6 ui-monospace,monospace;color:#d5eaf3;letter-spacing:.04em}
+.earlyPresetLoader label.preset span{display:block;font:10px/1.45 ui-monospace,monospace;color:#a7c2cf}
+.earlyPresetLoader small{font:10px/1.55 ui-monospace,monospace;color:#9aaebb}
+.presetNotice{padding:9px 11px;margin:8px 0;border:1px solid #557482;border-radius:6px;background:#162b35;color:#c5e0e9;font:10px/1.5 ui-monospace,monospace;overflow-wrap:anywhere}
+.stemSourceGrid>.stemManageRow{display:grid;gap:7px;padding:7px;border:1px solid #344956;border-radius:5px;min-width:0}
+.stemSourceGrid .stemManageRow>label{border:0;padding:0}
+.stemManageMix{display:grid;gap:5px;min-width:0}
+.stemManageMix .control{display:grid;gap:4px;min-height:0;border:0;padding:2px 0}
+.stemManageMix .control>span{display:flex;justify-content:space-between;align-items:center;font-size:9px}
+.stemManageMix .control input[type=range]{width:100%;min-width:0}
+.stemManageMix .ms{display:flex;gap:4px;flex-wrap:wrap}
+.stemManageMix .ms button{flex:1;min-width:46px}
