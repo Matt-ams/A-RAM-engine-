@@ -149,7 +149,7 @@ try{
  await page.locator('.stemSourceManager .stemManageRow').nth(1).locator('input[type=file]').setInputFiles({name:'lead-cleaned-in-daw.wav',mimeType:'audio/wav',buffer:wav(510)});
  await page.getByText(/LEAD REPLACEMENT · ROOM must be rebuilt/).waitFor({timeout:15000});
  assert.equal(await page.getByRole('button',{name:'ORBIT ENGINE · OFF'}).count(),1,'replacement forcibly disables any Orbit scene');
- assert.equal(await page.getByRole('button',{name:/SMART SCOUT/}).isDisabled(),true,'cannot scout stale original ROOM after reimport');
+ assert.equal(await page.getByRole('button',{name:/SCOUT THIS BREAK/}).isDisabled(),true,'cannot scout stale original ROOM after reimport');
  await page.getByRole('button',{name:/REBUILD ROOM BUS/}).click();
  await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:45000});
  assert.equal(await page.getByRole('button',{name:'ORBIT ENGINE · OFF'}).count(),1,'user must re-enable Orbit after vocal replacement');
