@@ -67,3 +67,11 @@ html{scrollbar-gutter:stable}
 .stemSourceGrid input{max-width:100%;color:#b3cbd6;font:10px ui-monospace,monospace}
 @media(max-width:780px){.stemSourceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:450px){.stemSourceGrid{grid-template-columns:minmax(0,1fr)}}
+
+/* V4.3.2: transport recovery that never resets the mixing session. */
+.transport .repairAudioButton{border:1px solid #527b89;background:#142a34;color:#c4e3eb;border-radius:5px;padding:8px 11px;cursor:pointer;font:700 10px ui-monospace,monospace;letter-spacing:.045em;white-space:nowrap}
+.transport .repairAudioButton:hover:not(:disabled){border-color:#9dc5d3;background:#203946}
+.transport .repairAudioButton:focus-visible{outline:2px solid #d2e8f4;outline-offset:2px}
+.transport .repairAudioButton:disabled{opacity:.5;cursor:progress}
+.transport .audioStateNotice{color:#f1c69b;font:700 10px ui-monospace,monospace;letter-spacing:.02em}
+@media(max-width:700px){.transport{flex-wrap:wrap}.transport .repairAudioButton{font-size:9px}}
