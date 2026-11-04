@@ -42,8 +42,8 @@ try{
  await page.locator('.roomRebuild').click();
  await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:40000});
  await page.waitForFunction(()=>{const b=document.querySelector('button.export');return b&&!b.hasAttribute('disabled')},null,{timeout:90000});
- const firstPresetEvent=page.waitForEvent('download',{timeout:30000});await page.getByRole('button',{name:/SAVE SETTINGS · V5/}).click();const firstPreset=await firstPresetEvent;const preset=JSON.parse(await readFile(await firstPreset.path(),'utf-8'));
- assert.equal(preset.version,5);
+ const firstPresetEvent=page.waitForEvent('download',{timeout:30000});await page.getByRole('button',{name:/SAVE SETTINGS · V6/}).click();const firstPreset=await firstPresetEvent;const preset=JSON.parse(await readFile(await firstPreset.path(),'utf-8'));
+ assert.equal(preset.version,6);
  assert.equal(preset.format,'asram-studio-preset');
  assert.equal(preset.stemMix.beat.gain,-3.4);
  assert.equal(preset.stemMix.beat.pan,.35);
@@ -62,7 +62,7 @@ try{
  await page.getByRole('button',{name:/NEW SESSION/}).click();
  await page.getByRole('button',{name:/STEMS/}).first().click();
  const earlyFile=page.locator('.earlyPresetLoader input[type=file]');
- await earlyFile.setInputFiles({name:'tt2-v5.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(preset))});
+ await earlyFile.setInputFiles({name:'tt2-v6.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(preset))});
  await page.getByText(/V5 COMPLETE · ROOM \+ MASTER \+ STEM MIX restored/).waitFor({timeout:15000});
  const channel2=page.locator('.stemGrid .stemChannel');
  for(let i=0;i<files.length;i++)await channel2.nth(i).locator('input[type=file]').setInputFiles(files[i]);
