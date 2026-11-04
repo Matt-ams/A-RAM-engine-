@@ -71,6 +71,12 @@ try{
  const download=page.waitForEvent('download',{timeout:60000});
  await page.locator('button.export').click();const wavBytes=await readFile(await (await download).path());
  assert.equal(wavBytes.toString('ascii',0,4),'RIFF');assert.equal(wavBytes.readUInt16LE(34),24);
+ // Two consecutive exports of the same verified master must never acquire
+ // random hiss, crackle or other new data during WAV serialization.
+ const repeatDownload=page.waitForEvent('download',{timeout:60000});
+ await page.locator('button.export').click();
+ const wavRepeat=await readFile(await (await repeatDownload).path());
+ assert(wavBytes.equals(wavRepeat),'Repeated WAV exports of the same processed buffer must be byte-for-byte deterministic');
  const verifyInput=page.getByRole('textbox',{name:'Compare exported WAV to ENGINE'});
  // The actual WAV downloaded by the user should match the actual internal B buffer.
  await page.locator('.exportAuditPanel input[type=file]').setInputFiles({name:'test-export.wav',mimeType:'audio/wav',buffer:wavBytes});
@@ -119,5 +125,5 @@ try{
  let lockedDelta=0;for(const {sample,value} of lockPreview.samples){lockedDelta=Math.max(lockedDelta,Math.abs(signed(lockBytes,44+sample*6)/8388608-value))}
  assert(lockedDelta<.000002,'Original Lock B preview must match original locked WAV export');
  assert.equal(errors.length,0,errors.join('\n'));
- console.log('EXPORT MATCH / WAV PCM PARITY PASS',JSON.stringify({browser:engine===webkit?'webkit':'chromium',wavBytes:wavBytes.length,maxPcm24Difference:max,meanPcm24Difference:mean,previewDirectUnity:true,legacyImmersiveStillAvailable:true,originalLockParity:true,lockedMaxDelta:lockedDelta}));
+ console.log('EXPORT MATCH / WAV PCM PARITY PASS',JSON.stringify({browser:engine===webkit?'webkit':'chromium',wavBytes:wavBytes.length,maxPcm24Difference:max,meanPcm24Difference:mean,previewDirectUnity:true,repeatedWavByteIdentical:true,legacyImmersiveStillAvailable:true,originalLockParity:true,lockedMaxDelta:lockedDelta}));
 }finally{await browser?.close();server.kill('SIGTERM')}
