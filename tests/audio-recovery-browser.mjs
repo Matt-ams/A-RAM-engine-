@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {chromium,webkit} from 'playwright';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4323','--strictPort'],{cwd:root,stdio:'ignore'});
-function wav(freq=145){const sr=44100,frames=sr*10,bytes=Buffer.alloc(44+frames*4);bytes.write('RIFF',0);bytes.writeUInt32LE(bytes.length-8,4);bytes.write('WAVEfmt ',8);bytes.writeUInt32LE(16,16);bytes.writeUInt16LE(1,20);bytes.writeUInt16LE(2,22);bytes.writeUInt32LE(sr,24);bytes.writeUInt32LE(sr*4,28);bytes.writeUInt16LE(4,32);bytes.writeUInt16LE(16,34);bytes.write('data',36);bytes.writeUInt32LE(frames*4,40);for(let i=0;i<frames;i++){const v=Math.round(9000*Math.sin(i*2*Math.PI*freq/sr));bytes.writeInt16LE(v,44+i*4);bytes.writeInt16LE(v,46+i*4)}return bytes}
+function wav(freq=145){const sr=44100,frames=sr*5,bytes=Buffer.alloc(44+frames*4);bytes.write('RIFF',0);bytes.writeUInt32LE(bytes.length-8,4);bytes.write('WAVEfmt ',8);bytes.writeUInt32LE(16,16);bytes.writeUInt16LE(1,20);bytes.writeUInt16LE(2,22);bytes.writeUInt32LE(sr,24);bytes.writeUInt32LE(sr*4,28);bytes.writeUInt16LE(4,32);bytes.writeUInt16LE(16,34);bytes.write('data',36);bytes.writeUInt32LE(frames*4,40);for(let i=0;i<frames;i++){const v=Math.round(9000*Math.sin(i*2*Math.PI*freq/sr));bytes.writeInt16LE(v,44+i*4);bytes.writeInt16LE(v,46+i*4)}return bytes}
 let browser;
 try{
  let ready=false;for(let i=0;i<100;i++){try{ready=(await fetch('http://127.0.0.1:4323/')).ok;if(ready)break}catch{}await new Promise(r=>setTimeout(r,250))}
@@ -28,6 +28,7 @@ try{
  await inputs.nth(1).setInputFiles({name:'lead.wav',mimeType:'audio/wav',buffer:wav(264)});
  await page.getByRole('button',{name:/BUILD REAL STEM BUS/}).click();
  await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:45000});
+ await page.waitForFunction(()=>{const e=document.querySelector('button.export');return e&&!e.hasAttribute('disabled')},{timeout:90000});
  await page.getByRole('button',{name:'Play audio'}).click();
  await page.getByRole('button',{name:'Pause audio'}).waitFor({timeout:25000});
  assert.equal(await page.evaluate(()=>window.__lastAudioContext.state),'running','audio context must start running');
