@@ -147,3 +147,9 @@ html{scrollbar-gutter:stable}
 @media(max-width:950px){.orbitBody{grid-template-columns:1fr}.orbitScene{max-width:650px;justify-self:center;width:100%}.orbitWorkbench{width:100%}}
 @media(max-width:680px){.orbitHead{flex-wrap:wrap;padding:18px}.orbitBody{padding:15px}.orbitTimeline{margin:8px 15px 0}.orbitEditor{margin:12px 15px}.orbitEditorGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.orbitControls{grid-template-columns:1fr 1fr}}
 @media(max-width:440px){.orbitEditorGrid{grid-template-columns:1fr}.orbitControls{grid-template-columns:1fr}.orbitToggle{width:100%}.orbitActions button{flex:1}.orbitTimelineTitle{flex-wrap:wrap}}
+
+/* Rear Orbits V4.5: visible guard while an updated vocal/source is awaiting ROOM rebuild. */
+.orbitPending{padding:11px 12px;border:1px solid #c09b67;background:#2a2017;border-radius:6px;color:#efcda2;font:700 10px/1.6 ui-monospace,monospace}
+.orbitToggle:disabled{opacity:.42;cursor:not-allowed}
+.orbitScene svg>path[stroke^="url("]{filter:drop-shadow(0 0 4px #a7dbed6c)}
+@media(prefers-reduced-motion:reduce){.orbitScene circle animateMotion{display:none}}

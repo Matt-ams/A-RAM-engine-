@@ -1,6 +1,6 @@
 import {useMemo,useState,type Dispatch,type SetStateAction} from 'react';
 import {
- orbitEventSources,scoutMicroOrbits,type OrbitEvent,type OrbitSettings,
+ orbitEventSources,scoutMicroOrbits,orbitPathPositions,type OrbitEvent,type OrbitSettings,
  type OrbitSource,type OrbitPath,type OrbitBand,type OrbitStemMap
 } from './audio/microOrbits';
 
@@ -8,23 +8,26 @@ type Props={
  mix:AudioBuffer; mode:'stems'|'stereo';stems:OrbitStemMap;
  events:OrbitEvent[];setEvents:Dispatch<SetStateAction<OrbitEvent[]>>;
  settings:OrbitSettings;setSettings:Dispatch<SetStateAction<OrbitSettings>>;
- playhead:number;originalLock:boolean;
+ playhead:number;originalLock:boolean;roomPending?:boolean;
 };
 const paths:{id:OrbitPath;label:string}[]=[
- {id:'left-rear-right',label:'LEFT EAR → REAR → RIGHT EAR'},
- {id:'right-rear-left',label:'RIGHT EAR → REAR → LEFT EAR'},
- {id:'rear-drift-left',label:'REAR RIGHT → REAR LEFT'},
- {id:'rear-drift-right',label:'REAR LEFT → REAR RIGHT'}
+ {id:'left-rear-right',label:'LEFT → REAR → RIGHT'},
+ {id:'right-rear-left',label:'RIGHT → REAR → LEFT'},
+ {id:'rear-drift-left',label:'BACK RIGHT → BACK LEFT'},
+ {id:'rear-drift-right',label:'BACK LEFT → BACK RIGHT'},
+ {id:'front-left-right',label:'FRONT LEFT → FRONT RIGHT'},
+ {id:'front-right-left',label:'FRONT RIGHT → FRONT LEFT'},
+ {id:'front-to-rear-left',label:'FRONT → LEFT EAR → BEHIND'},
+ {id:'front-to-rear-right',label:'FRONT → RIGHT EAR → BEHIND'},
+ {id:'rear-to-front-left',label:'BEHIND → LEFT EAR → FRONT'},
+ {id:'rear-to-front-right',label:'BEHIND → RIGHT EAR → FRONT'},
+ {id:'full-orbit-cw',label:'360° FRONT → RIGHT → BACK → LEFT'},
+ {id:'full-orbit-ccw',label:'360° FRONT → LEFT → BACK → RIGHT'}
 ];
 const clock=(seconds:number)=>`${Math.floor(seconds/60)}:${Math.floor(seconds%60).toString().padStart(2,'0')}`;
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
-function curve(path:OrbitPath){
- if(path==='left-rear-right')return 'M 112 121 C 98 218 382 239 368 121';
- if(path==='right-rear-left')return 'M 368 121 C 382 239 98 218 112 121';
- if(path==='rear-drift-left')return 'M 318 180 Q 240 242 162 180';
- return 'M 162 180 Q 240 242 318 180';
-}
-export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settings,setSettings,playhead,originalLock}:Props){
+const svgPath=(p:Array<[number,number]>)=>p.map(([x,z],i)=>`${i===0?'M':'L'} ${(240+x*65).toFixed(2)} ${(127+z*44).toFixed(2)}`).join(' ');
+export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settings,setSettings,playhead,originalLock,roomPending=false}:Props){
  const [selectedId,setSelectedId]=useState<number|null>(null);
  const selected=events.find(e=>e.id===selectedId)??events[0]??null;
  const candidates=useMemo(()=>orbitEventSources(stems,mode).map(s=>s.source),[stems,mode]);
@@ -35,22 +38,25 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
   if(prev.length>=12)return prev;
   const at=Math.round(clamp(playhead,0,Math.max(0,mix.duration-.8))*100)/100;
   const source=availableSources[0]??'mix';
-  const duration=source==='mix'?.32:source==='lead'?.42:.55;
+  const duration=source==='mix'?.45:source==='lead'?.85:.9;
   const id=Math.max(Date.now(),...prev.map(e=>e.id+1));
   setSelectedId(id);
-  const event:OrbitEvent={id,source,at,duration,path:'left-rear-right',band:source==='lead'?'voice':'detail',level:.75};return [...prev,event].sort((a,b)=>a.at-b.at);
+  const event:OrbitEvent={id,source,at,duration,path:'front-to-rear-left',band:source==='lead'?'voice':'detail',level:.75};return [...prev,event].sort((a,b)=>a.at-b.at);
  })};
  const scan=()=>{const proposals=scoutMicroOrbits(mix,stems,mode,7);
   setEvents(proposals);setSelectedId(proposals[0]?.id??null);
  };
- const rearPath=selected?curve(selected.path):'M 112 121 C 98 218 382 239 368 121';
+ const points=orbitPathPositions(selected?.path??'left-rear-right',settings.rear,settings.motion??.75);
+ const rearPath=svgPath(points);
+ const begin=points[0],end=points[points.length-1];
+ const screenPoint=([x,z]:[number,number])=>({x:240+x*65,y:127+z*44});
  return <section className='orbitLab' aria-label='Rear Orbits Micro Events'>
   <header className='orbitHead'>
-   <div><p className='orbitEyebrow'>OPTIONAL POST-ROOM EXPERIMENT · WET ONLY</p><h2>REAR ORBITS <span>MICRO-EVENT MOTION</span></h2><p>Let tiny ad-libs, vocal fragments and selected stereo details travel around the back of the head. The BEAT and dry LEAD never move. Independent of ROOM and HALO.</p></div>
-   <button className={settings.enabled?'orbitToggle active':'orbitToggle'} aria-pressed={settings.enabled} onClick={()=>updateSetting('enabled',!settings.enabled)}>{settings.enabled?'ORBIT ENGINE · ON':'ORBIT ENGINE · OFF'}</button>
+   <div><p className='orbitEyebrow'>OPTIONAL POST-ROOM EXPERIMENT · WET ONLY</p><h2>REAR ORBITS <span>FRONT / REAR · SENSORIAL MICRO-SWEEPS</span></h2><p>Animate short vocal fragments across the front, around an ear, and behind the head. The main BEAT, direct LEAD, and existing ROOM stay anchored.</p></div>
+   <button className={settings.enabled?'orbitToggle active':'orbitToggle'} aria-pressed={settings.enabled} disabled={roomPending&&!settings.enabled} onClick={()=>updateSetting('enabled',!settings.enabled)}>{settings.enabled?'ORBIT ENGINE · ON':'ORBIT ENGINE · OFF'}</button>
   </header>
   <div className='orbitBody'>
-   <div className='orbitScene' role='img' aria-label='Head and ear diagram showing wet sound movement behind listener'>
+   <div className='orbitScene' role='img' aria-label='Top-down headphone diagram showing front, ear-side and rear wet sound trajectories'>
     <svg viewBox='0 0 480 270' aria-hidden='true'>
      <defs><radialGradient id='orbit-v44-night'><stop stopColor='#203342'/><stop offset='1' stopColor='#0a121b'/></radialGradient>
      <linearGradient id='orbit-v44-trail'><stop stopColor='#8ddfe3'/><stop offset='.5' stopColor='#c6a5ed'/><stop offset='1' stopColor='#8ddfe3'/></linearGradient></defs>
@@ -63,26 +69,31 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
      <path d='M 213 92 Q 240 70 267 92' fill='none' stroke='#819dac' strokeWidth='3'/>
      <circle cx='240' cy='118' r='13' fill='#c9dee8' opacity='.92'/>
      <path d={rearPath} fill='none' stroke='url(#orbit-v44-trail)' strokeWidth='4' strokeLinecap='round'/>
-     <circle cx={selected?.path==='right-rear-left'?368:112} cy='121' r='6' fill='#bce7e9'/>
-     <circle cx='240' cy='218' r='5' fill='#c5a9e5'/>
-     <circle cx={selected?.path==='right-rear-left'?112:368} cy='121' r='6' fill='#bce7e9'/>
+     <circle cx={screenPoint(begin).x} cy={screenPoint(begin).y} r='6' fill='#bce7e9'/>
+     <circle cx={screenPoint(end).x} cy={screenPoint(end).y} r='6' fill='#e3b4ee'/>
+     <circle r='5' fill='#c9f0f2' opacity='.9'><animateMotion dur={`${Math.max(.6,selected?.duration??1)*2}s`} repeatCount='indefinite' path={rearPath}/></circle>
      <text x='240' y='22' fill='#9ec0cb' textAnchor='middle' fontSize='11' fontFamily='monospace'>FRONT / DRY ANCHOR</text>
-     <text x='240' y='263' fill='#c6b3dc' textAnchor='middle' fontSize='11' fontFamily='monospace'>REAR FIELD · WET REFLECTIONS</text>
+     <text x='240' y='263' fill='#c6b3dc' textAnchor='middle' fontSize='11' fontFamily='monospace'>BEHIND · WET REFLECTIONS</text>
      <text x='94' y='92' fill='#a3c0cf' textAnchor='middle' fontSize='11' fontFamily='monospace'>LEFT EAR</text>
      <text x='389' y='92' fill='#a3c0cf' textAnchor='middle' fontSize='11' fontFamily='monospace'>RIGHT EAR</text>
     </svg>
-    <small>Conceptual rear cues, not measured 360° placement. HRTF is wet-only and headphone-dependent.</small>
+    <small>Animated trajectory is illustrative. Audio uses matching 3D front/back keyframes, but actual perception depends on headphones, ears and browser HRTF.</small>
    </div>
    <div className='orbitWorkbench'>
     <div className='orbitControls'>
      <label>WET INTENSITY <b>{Math.round(settings.amount*100)}%</b><input aria-label='Orbit wet intensity' type='range' min='0' max='100' step='5' value={settings.amount*100} onChange={e=>updateSetting('amount',Number(e.target.value)/100)}/></label>
      <label>REAR DEPTH <b>{Math.round(settings.rear*100)}%</b><input aria-label='Orbit rear depth' type='range' min='0' max='100' step='5' value={settings.rear*100} onChange={e=>updateSetting('rear',Number(e.target.value)/100)}/></label>
     </div>
-    <button className={settings.hrtf?'orbitHrtf on':'orbitHrtf'} aria-pressed={settings.hrtf} onClick={()=>updateSetting('hrtf',!settings.hrtf)}>REAR HRTF · WET ONLY {settings.hrtf?'ON':'OFF'}</button>
-    <p className='orbitDetailNote'>At 100% wet intensity, the fragment layer is still gain-capped. It is not a full-song autopanner. The main beat, direct voice and existing ROOM dry path are unchanged.</p>
+    <div className='orbitControls'>
+     <label>TRAJECTORY SPAN <b>{Math.round((settings.motion??.75)*100)}%</b><input aria-label='Orbit trajectory span' type='range' min='0' max='100' step='5' value={(settings.motion??.75)*100} onChange={e=>updateSetting('motion',Number(e.target.value)/100)}/></label>
+     <label>REAR PERSISTENCE <b>{Math.round((settings.trail??.22)*100)}%</b><input aria-label='Orbit rear persistence' type='range' min='0' max='100' step='5' value={(settings.trail??.22)*100} onChange={e=>updateSetting('trail',Number(e.target.value)/100)}/></label>
+    </div>
+    <button className={settings.hrtf?'orbitHrtf on':'orbitHrtf'} aria-pressed={settings.hrtf} onClick={()=>updateSetting('hrtf',!settings.hrtf)}>3D HRTF · WET ONLY {settings.hrtf?'ON':'OFF'}</button>
+    <p className='orbitDetailNote'>WET-only fragments, gain-limited. Turn 3D HRTF ON for front/back cues; OFF reduces to left/right stereo. If Safari sounds boxy, compare both. This is NOT discrete Atmos.</p>
+    {roomPending&&<p className='orbitPending' role='status'>STEMS CHANGED OR ROOM SETTINGS PENDING · REBUILD ROOM BUS BEFORE USING SMART SCOUT OR RE-ENABLING ORBITS.</p>}
     <div className='orbitActions'>
-     <button onClick={scan} disabled={mix.duration<.8}>SMART SCOUT · FIND DETAILS</button>
-     <button onClick={addManual} disabled={events.length>=12||mix.duration<.8}>+ DETAIL AT PLAYHEAD ({clock(playhead)})</button>
+     <button onClick={scan} disabled={roomPending||mix.duration<.8}>SMART SCOUT · FIND DETAILS</button>
+     <button onClick={addManual} disabled={roomPending||events.length>=12||mix.duration<.8}>+ DETAIL AT PLAYHEAD ({clock(playhead)})</button>
      <button onClick={()=>{setEvents([]);setSelectedId(null)}} disabled={!events.length}>CLEAR</button>
     </div>
     <small className='orbitDetailNote'>LOCAL SIGNAL HEURISTIC · prefers AD-LIBS / DOUBLES, then short LEAD snippets. Never selects the BEAT stem. In stereo mode, spectral filtering is approximate: voices and instruments cannot be separated reliably.</small>
@@ -100,12 +111,12 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
     <label>SOURCE<select aria-label='Orbit event source' value={selected.source} onChange={e=>updateEvent({source:e.target.value as OrbitSource,band:e.target.value==='lead'?'voice':'detail'})}>{availableSources.map(s=><option value={s} key={s}>{s==='mix'?'STEREO / ROOM MIX · FILTERED':s.toUpperCase()}</option>)}</select></label>
     <label>ROUTE<select aria-label='Orbit event route' value={selected.path} onChange={e=>updateEvent({path:e.target.value as OrbitPath})}>{paths.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
     <label>DETAIL BAND<select aria-label='Orbit event band' value={selected.band} onChange={e=>updateEvent({band:e.target.value as OrbitBand})}><option value='detail'>BRIGHT DETAIL</option><option value='voice'>VOCAL PRESENCE</option></select></label>
-    <label>START · {selected.at.toFixed(2)}s<input aria-label='Orbit event time' type='range' min='0' max={Math.max(.1,mix.duration-1.2)} step='.05' value={selected.at} onChange={e=>updateEvent({at:Number(e.target.value)})}/></label>
-    <label>DURATION · {selected.duration.toFixed(2)}s<input aria-label='Orbit event duration' type='range' min='.15' max='1.20' step='.05' value={selected.duration} onChange={e=>updateEvent({duration:Number(e.target.value)})}/></label>
+    <label>START · {selected.at.toFixed(2)}s<input aria-label='Orbit event time' type='range' min='0' max={Math.max(.1,mix.duration-.15)} step='.05' value={selected.at} onChange={e=>updateEvent({at:Number(e.target.value)})}/></label>
+    <label>DURATION · {selected.duration.toFixed(2)}s<input aria-label='Orbit event duration' type='range' min='.15' max='2.40' step='.05' value={selected.duration} onChange={e=>updateEvent({duration:Number(e.target.value)})}/></label>
     <label>EVENT LEVEL · {Math.round(selected.level*100)}%<input aria-label='Orbit event level' type='range' min='0' max='100' step='5' value={selected.level*100} onChange={e=>updateEvent({level:Number(e.target.value)/100})}/></label>
    </div>
    <button className='orbitRemove' onClick={()=>{setEvents(es=>es.filter(e=>e.id!==selected.id));setSelectedId(null)}}>REMOVE SELECTED DETAIL</button>
-  </div>:<div className='orbitEmpty'>No orbit events. Mark a specific “hola” moment with the playhead, or run SMART SCOUT for suggested short fragments.</div>}
+  </div>:<div className='orbitEmpty'>No orbit events. Place a short vocal accent at the playhead, then choose a real FRONT / REAR route, or let SMART SCOUT suggest moments.</div>}
   <div className='orbitFooter'>
    <span>{settings.enabled?'ON · ORBIT WET LAYER INCLUDED IN NEXT MASTER RENDER':'OFF · ORIGINAL AUDIO PIPELINE BYPASSED EXACTLY'}</span>
    {originalLock&&<b>ORIGINAL LOCK IS ON — ORBITS WILL NOT ENTER LOCKED EXPORT</b>}
