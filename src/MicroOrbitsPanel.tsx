@@ -56,8 +56,14 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
   setSelectedId(id);
   const event:OrbitEvent={id,source,at,duration,path:'front-to-rear-left',band:source==='lead'?'voice':'detail',level:.75};return [...prev,event].sort((a,b)=>a.at-b.at);
  })};
- const scan=(around=false)=>{const proposals=scoutMicroOrbits(mix,stems,mode,around?4:7,around?playhead:undefined);
-  setEvents(proposals);setSelectedId(proposals[0]?.id??null);
+ const scan=(around=false)=>{
+  const proposals=scoutMicroOrbits(mix,stems,mode,around?4:7,around?playhead:undefined);
+  // Exploring a second break must NOT erase a previously positioned orbit scene.
+  let nextId=Math.max(Date.now(),...events.map(e=>e.id+1));
+  const additions=proposals.filter(candidate=>events.every(e=>Math.abs(e.at-candidate.at)>.35||e.source!==candidate.source))
+    .slice(0,Math.max(0,12-events.length))
+    .map(p=>({...p,id:nextId++}));
+  if(additions.length){setEvents(prev=>[...prev,...additions].sort((a,b)=>a.at-b.at));setSelectedId(additions[0].id)}
  };
  const points=orbitPathPositions(selected?.path??'left-rear-right',settings.rear,settings.motion??.75);
  const rearPath=svgPath(points);
@@ -114,6 +120,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
      <button onClick={addManual} disabled={roomPending||events.length>=12||mix.duration<.8}>+ DETAIL AT PLAYHEAD ({clock(playhead)})</button>
      <button onClick={()=>{setEvents([]);setSelectedId(null)}} disabled={!events.length}>CLEAR</button>
     </div>
+    <small className='orbitDetailNote'>SCOUT ADDS suggested moments without deleting earlier events. CLEAR is the only bulk scene reset.</small>
     <small className='orbitDetailNote'>LOCAL SIGNAL HEURISTIC · prefers AD-LIBS / DOUBLES, then short LEAD snippets. Never selects the BEAT stem. In stereo mode, spectral filtering is approximate: voices and instruments cannot be separated reliably.</small>
    </div>
   </div>
