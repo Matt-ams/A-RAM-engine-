@@ -71,6 +71,17 @@ try{
  const download=page.waitForEvent('download',{timeout:60000});
  await page.locator('button.export').click();const wavBytes=await readFile(await (await download).path());
  assert.equal(wavBytes.toString('ascii',0,4),'RIFF');assert.equal(wavBytes.readUInt16LE(34),24);
+ const verifyInput=page.getByRole('textbox',{name:'Compare exported WAV to ENGINE'});
+ // The actual WAV downloaded by the user should match the actual internal B buffer.
+ await page.locator('.exportAuditPanel input[type=file]').setInputFiles({name:'test-export.wav',mimeType:'audio/wav',buffer:wavBytes});
+ await page.getByText('PCM MATCH · EXPORT IS THE SAME ENGINE RENDER').waitFor({timeout:30000});
+ const changed=Buffer.from(wavBytes);
+ changed[44+170*6]=changed[44+170*6]^0x10;
+ await page.locator('.exportAuditPanel input[type=file]').setInputFiles({name:'corrupted.wav',mimeType:'audio/wav',buffer:changed});
+ await page.getByText('PCM MISMATCH · EXPORT IS NOT THE CURRENT RENDER').waitFor({timeout:30000});
+ const brokenFormat=Buffer.from(wavBytes);brokenFormat.writeUInt16LE(16,34);
+ await page.locator('.exportAuditPanel input[type=file]').setInputFiles({name:'unsupported.wav',mimeType:'audio/wav',buffer:brokenFormat});
+ await page.getByText(/accepts A\$RAM-style uncompressed PCM 24-bit/).waitFor({timeout:30000});
  await page.getByRole('button',{name:'Play audio'}).click();await page.getByRole('button',{name:'Pause audio'}).waitFor({timeout:22000});
  const preview=await page.evaluate(()=>{
   const b=window.__lastRealPlayback;if(!b)return null;
