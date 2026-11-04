@@ -18,7 +18,7 @@ const sources:OrbitSource[]=['mix','lead','doubles','adlibs'];
 export function validOrbitEvent(x:unknown):x is OrbitEvent{
  if(!x||typeof x!=='object')return false;
  const e=x as Partial<OrbitEvent>;
- return Number.isSafeInteger(e.id)&&Number.isFinite(e.at)&&e.at!>=0&&Number.isFinite(e.duration)&&e.duration!>=.12&&e.duration!<=1.2&&sources.includes(e.source as OrbitSource)&&paths.includes(e.path as OrbitPath)&&bands.includes(e.band as OrbitBand)&&Number.isFinite(e.level)&&e.level!>=0&&e.level!<=1;
+ return Number.isSafeInteger(e.id)&&Number.isFinite(e.at)&&e.at!>=0&&Number.isFinite(e.duration)&&e.duration!>=.12&&e.duration!<=2.4&&sources.includes(e.source as OrbitSource)&&paths.includes(e.path as OrbitPath)&&bands.includes(e.band as OrbitBand)&&Number.isFinite(e.level)&&e.level!>=0&&e.level!<=1;
 }
 export function validOrbitSettings(x:unknown):x is OrbitSettings{
  if(!x||typeof x!=='object')return false;
@@ -76,8 +76,8 @@ export function scoutMicroOrbits(mix:AudioBuffer,stems:OrbitStemMap,mode:'stems'
  }
  chosen.sort((a,b)=>a.time-b.time);
  return chosen.map((e,i)=>{
-  const duration=e.source==='lead'?.42:e.source==='mix'?.32:.55;
-  return {id:i+1,source:e.source,at:Math.round(e.time*100)/100,duration,path:paths[i%2],band:e.source==='mix'?'detail':e.source==='lead'?'voice':'detail',level:e.source==='mix'?.62:.8};
+  const duration=e.source==='lead'?.72:e.source==='mix'?.42:.78;
+  return {id:i+1,source:e.source,at:Math.round(e.time*100)/100,duration,path:(['front-to-rear-left','rear-drift-right','front-left-right','rear-to-front-right','left-rear-right','full-orbit-cw'] as OrbitPath[])[i%6],band:e.source==='mix'?'detail':e.source==='lead'?'voice':'detail',level:e.source==='mix'?.62:.8};
  });
 }
 /** The WebAudio listener faces negative Z. Positive Z is BEHIND the ears.
