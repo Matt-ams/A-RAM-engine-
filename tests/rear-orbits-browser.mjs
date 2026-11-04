@@ -1,4 +1,4 @@
-/** V4.4 Rear Orbits: isolated opt-in wet-only motion and V6 preset/browser regression. */
+/** V4.5 Rear Orbits: real front/rear HRTF motion, V6 scenes, replace vocal without stale orbit, dry preserve. */
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -23,7 +23,7 @@ try{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:4384/',{waitUntil:'networkidle'});
  const dsp=await page.evaluate(async()=>{
-  const {renderMicroOrbits,scoutMicroOrbits,orbitDefaults}=await import('/src/audio/microOrbits.ts');
+  const {renderMicroOrbits,scoutMicroOrbits,orbitDefaults,orbitPathPositions,validOrbitSettings}=await import('/src/audio/microOrbits.ts');
   const sr=44100,n=sr*3,mix=new AudioBuffer({sampleRate:sr,length:n,numberOfChannels:2});
   const lead=new AudioBuffer({sampleRate:sr,length:n,numberOfChannels:1});
   const adlibs=new AudioBuffer({sampleRate:sr,length:n,numberOfChannels:1});
@@ -36,24 +36,34 @@ try{
    adlibs.getChannelData(0)[i]=t>1.68&&t<1.96?.26*Math.sin(2*Math.PI*1810*t):0;
   }
   const stems={lead:{buffer:lead,mute:false,solo:false},doubles:{buffer:null,mute:false,solo:false},adlibs:{buffer:adlibs,mute:false,solo:false}};
-  const events=[{id:1,source:'lead',at:.83,duration:.50,path:'left-rear-right',band:'voice',level:.9}];
+  const events=[{id:1,source:'lead',at:.83,duration:.70,path:'front-to-rear-left',band:'voice',level:.9}];
   const disabled=await renderMicroOrbits(mix,stems,events,{...orbitDefaults,enabled:false});
   const zero=await renderMicroOrbits(mix,stems,events,{...orbitDefaults,enabled:true,amount:0});
   const enabled=await renderMicroOrbits(mix,stems,events,{...orbitDefaults,enabled:true,hrtf:false,amount:.7});
-  const enabledHrtf=await renderMicroOrbits(mix,stems,events,{...orbitDefaults,enabled:true,hrtf:true,amount:.7});
+  const enabledHrtf=await renderMicroOrbits(mix,stems,events,{...orbitDefaults,enabled:true,hrtf:true,amount:.7,motion:1,trail:.4});
+  const f2r=orbitPathPositions('front-to-rear-right',.8,1);
+  const r2f=orbitPathPositions('rear-to-front-left',.8,1);
+  const around=orbitPathPositions('full-orbit-cw',.8,1);
+  const settingsValidated=validOrbitSettings({...orbitDefaults,motion:1,trail:.6});
+  const badSettingsRejected=!validOrbitSettings({...orbitDefaults,motion:5});
   const compare=(a,b,begin,end)=>{
    const left=a.getChannelData(0),right=b.getChannelData(0);
    let maximum=0,mean=0,finite=true,num=0;
    for(let i=Math.floor(begin*sr);i<Math.floor(end*sr);i++){const d=Math.abs(left[i]-right[i]);maximum=Math.max(maximum,d);mean+=d;finite=finite&&Number.isFinite(left[i])&&Number.isFinite(right[i]);num++}
    return {maximum,mean:mean/Math.max(1,num),finite};
   };
-  return {sameObject:disabled===mix,zeroSame:zero===mix,early:compare(mix,enabled,0,.75),during:compare(mix,enabled,.87,1.26),later:compare(mix,enabled,1.7,2.5),hrtfs:compare(mix,enabledHrtf,.87,1.26),rate:enabled.sampleRate,length:enabled.length,
+  return {sameObject:disabled===mix,zeroSame:zero===mix,early:compare(mix,enabled,0,.75),during:compare(mix,enabled,.87,1.26),later:compare(mix,enabled,1.7,2.5),hrtfs:compare(mix,enabledHrtf,.87,1.26),rate:enabled.sampleRate,length:enabled.length,f2r,r2f,around,settingsValidated,badSettingsRejected,
    suggested:scoutMicroOrbits(mix,stems,'stems',5).map(x=>({source:x.source,at:x.at,path:x.path})),
    stereo:scoutMicroOrbits(mix,{},'stereo',5).map(x=>x.source)};
  });
  assert.equal(dsp.sameObject,true,'OFF must return original source buffer by identity');
  assert.equal(dsp.zeroSame,true,'intensity=0 must bypass original by identity');
  assert.equal(dsp.rate,44100);assert.equal(dsp.length,44100*3);
+ assert(dsp.settingsValidated&&dsp.badSettingsRejected,'new motion and persistence validate strictly');
+ assert(dsp.f2r[0][1]<0&&dsp.f2r.at(-1)[1]>0,'FRONT to REAR crosses listener plane');
+ assert(dsp.r2f[0][1]>0&&dsp.r2f.at(-1)[1]<0,'REAR to FRONT crosses listener plane');
+ assert.equal(dsp.around.length,9,'full 360 trajectory must contain multiple directional waypoints');
+ assert(dsp.around.some(p=>p[1]<0)&&dsp.around.some(p=>p[1]>0)&&dsp.around.some(p=>p[0]<0)&&dsp.around.some(p=>p[0]>0),'full 360 must cover front/back/left/right');
  assert(dsp.early.finite&&dsp.during.finite&&dsp.later.finite&&dsp.hrtfs.finite);
  assert(dsp.early.maximum<1e-7&&dsp.later.maximum<1e-7,'wet-only event must not alter dry audio outside event window');
  assert(dsp.during.maximum>0.00001,'moving wet fragment must be audible in PCM');
@@ -75,6 +85,11 @@ try{
  const sourceInput=panel.getByRole('combobox',{name:'Orbit event source'});
  assert(await sourceInput.count()>0,'Auto scout must propose lead/adlib events');
  assert.notEqual(await sourceInput.inputValue(),'mix','STEM scout should select a real vocal detail');
+ await panel.getByRole('combobox',{name:'Orbit event route'}).selectOption('front-to-rear-right');
+ await panel.getByRole('slider',{name:'Orbit trajectory span'}).fill('90');
+ await panel.getByRole('slider',{name:'Orbit rear persistence'}).fill('55');
+ await panel.getByRole('button',{name:/3D HRTF/}).click();
+ await panel.getByRole('button',{name:/3D HRTF/}).click();
  await panel.getByRole('button',{name:'ORBIT ENGINE · OFF'}).click();
  assert.equal(await panel.getByRole('button',{name:'ORBIT ENGINE · ON'}).count(),1);
  await page.waitForFunction(()=>{const e=document.querySelector('button.export');return e&&!e.hasAttribute('disabled')},null,{timeout:90000});
@@ -83,6 +98,8 @@ try{
  assert(!orbitWav.equals(baseline),'ON with proposed events must create changed WAV');
  const saved=page.waitForEvent('download');await page.getByRole('button',{name:/SAVE SETTINGS · V6/}).click();const preset=JSON.parse(await readFile(await (await saved).path(),'utf8'));
  assert.equal(preset.version,6);assert.equal(preset.orbitSettings.enabled,true);assert(preset.orbitEvents.length>0);
+ assert.equal(preset.orbitSettings.motion,.9);assert.equal(preset.orbitSettings.trail,.55);
+ assert.equal(preset.orbitEvents[0].path,'front-to-rear-right');
  assert.equal(preset.superboostOn,false);assert.equal(preset.haloMode,true);
  await panel.getByRole('button',{name:'ORBIT ENGINE · ON'}).click();
  await page.waitForFunction(()=>{const e=document.querySelector('button.export');return e&&!e.hasAttribute('disabled')},null,{timeout:90000});
@@ -100,6 +117,20 @@ try{
  assert.equal(await page.getByRole('button',{name:'ORBIT ENGINE · ON'}).count(),1);
  const loadedEvents=page.locator('.orbitMarker');
  assert.equal(await loadedEvents.count(),preset.orbitEvents.length);
+ assert.equal(await page.getByRole('slider',{name:'Orbit trajectory span'}).inputValue(),'90');
+ assert.equal(await page.getByRole('slider',{name:'Orbit rear persistence'}).inputValue(),'55');
+ // The edited source file is not auto-reloaded: explicitly replace the LEAD.
+ await page.locator('.stemSourceManager summary').click();
+ await page.locator('.stemSourceManager .stemManageRow').nth(1).locator('input[type=file]').setInputFiles({name:'lead-cleaned-in-daw.wav',mimeType:'audio/wav',buffer:wav(510)});
+ await page.getByText(/LEAD REPLACEMENT · ROOM must be rebuilt/).waitFor({timeout:15000});
+ assert.equal(await page.getByRole('button',{name:'ORBIT ENGINE · OFF'}).count(),1,'replacement forcibly disables any Orbit scene');
+ assert.equal(await page.getByRole('button',{name:/SMART SCOUT/}).isDisabled(),true,'cannot scout stale original ROOM after reimport');
+ await page.getByRole('button',{name:/REBUILD ROOM BUS/}).click();
+ await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:45000});
+ assert.equal(await page.getByRole('button',{name:'ORBIT ENGINE · OFF'}).count(),1,'user must re-enable Orbit after vocal replacement');
+ assert.equal(await page.locator('.orbitMarker').count(),preset.orbitEvents.length,'scene remains editable after source replacement');
+ await page.getByRole('button',{name:'ORBIT ENGINE · OFF'}).click();
+ await page.waitForFunction(()=>{const e=document.querySelector('button.export');return e&&!e.hasAttribute('disabled')},null,{timeout:90000});
  assert.equal(errors.length,0,errors.join(' / '));
- console.log('REAR ORBITS V4.4 PASS',JSON.stringify({engine:engine===webkit?'webkit':'chromium',dsp,uiEvents:preset.orbitEvents.length,offMaxDelta:maxSampleDelta(offWav,baseline),enabledWav:true,v6Imported:true}));
+ console.log('REAR ORBITS V4.5 PASS',JSON.stringify({engine:engine===webkit?'webkit':'chromium',dsp,uiEvents:preset.orbitEvents.length,offMaxDelta:maxSampleDelta(offWav,baseline),enabledWav:true,v6Imported:true,leadReplacementSafe:true}));
 }finally{await browser?.close();server.kill('SIGTERM')}
