@@ -92,3 +92,51 @@ html{scrollbar-gutter:stable}
 .stemManageMix .control input[type=range]{width:100%;min-width:0}
 .stemManageMix .ms{display:flex;gap:4px;flex-wrap:wrap}
 .stemManageMix .ms button{flex:1;min-width:46px}
+
+/* REAR ORBITS V4.4 · optional below-ROOM micro-event field.
+ * Distinct headphone / ear projection instead of the ROOM XY floor plan. */
+.orbitLab{margin:24px 0 26px;border:1px solid #425466;border-radius:13px;background:linear-gradient(135deg,#101d29 0%,#12151e 52%,#100f1a 100%);box-shadow:0 8px 35px #0005;overflow:hidden;overflow-anchor:none}
+.orbitHead{display:flex;gap:16px;justify-content:space-between;align-items:start;padding:22px 24px 18px;border-bottom:1px solid #364759;background:linear-gradient(95deg,#162737dd,#10111e88)}
+.orbitHead>div{min-width:0;max-width:850px}
+.orbitHead p.orbitEyebrow{margin:0 0 9px;color:#8db6c8;font:700 10px/1.3 ui-monospace,monospace;letter-spacing:.15em}
+.orbitHead h2{font:750 clamp(20px,2.4vw,29px)/1.1 ui-sans-serif,sans-serif;letter-spacing:.06em;margin:0 0 10px;color:#ecf2f6}
+.orbitHead h2 span{font:500 10px/1.3 ui-monospace,monospace;color:#baa6d6;letter-spacing:.11em;display:block;margin-top:8px}
+.orbitHead p:not(.orbitEyebrow){font:11px/1.7 ui-monospace,monospace;color:#a1b2c2;margin:0;letter-spacing:0}
+.orbitToggle{flex:0 0 auto;border:1px solid #6a7990;border-radius:5px;background:#18202a;color:#bbc7d5;padding:12px 16px;font:750 10px ui-monospace,monospace;letter-spacing:.07em;cursor:pointer;white-space:nowrap}
+.orbitToggle.active{background:#a2dfe0;border-color:#c5f5f6;color:#0b2328}
+.orbitBody{display:grid;grid-template-columns:minmax(265px,.85fr) minmax(300px,1.15fr);gap:18px;padding:18px 20px 10px}
+.orbitScene{min-width:0;display:grid;align-content:start;gap:8px}
+.orbitScene svg{display:block;width:100%;height:auto;border:1px solid #304254;border-radius:9px;background:#101d28}
+.orbitScene small,.orbitDetailNote{font:10px/1.65 ui-monospace,monospace;color:#94a7bb;display:block;margin:2px 0}
+.orbitWorkbench{min-width:0;display:flex;flex-direction:column;gap:13px}
+.orbitControls{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.orbitControls label,.orbitEditorGrid label{min-width:0;color:#b3c7d2;font:700 10px/1.5 ui-monospace,monospace;letter-spacing:.035em}
+.orbitControls label b{float:right;color:#d6e5ee}
+.orbitControls input[type=range],.orbitEditorGrid input[type=range]{display:block;width:100%;margin-top:9px;accent-color:#9bdde1;cursor:pointer;touch-action:pan-x}
+.orbitHrtf{align-self:start;border:1px solid #55687d;background:#161b29;color:#9cb4c4;padding:9px 13px;border-radius:5px;font:700 10px ui-monospace,monospace;cursor:pointer}
+.orbitHrtf.on{border-color:#b39fcb;color:#e4d2fa;background:#2a203c}
+.orbitActions{display:flex;gap:8px;flex-wrap:wrap}
+.orbitActions button{border:1px solid #657d8d;border-radius:5px;background:#203443;color:#d5ebf6;padding:10px 12px;font:700 10px ui-monospace,monospace;letter-spacing:.025em;cursor:pointer}
+.orbitActions button:first-child{background:#90c0ce;color:#0b1e2c;border-color:#bbecf4}
+.orbitActions button:last-child{background:#1a1c27;border-color:#4f5164;color:#aeb7c6}
+.orbitActions button:disabled,.orbitRemove:disabled{opacity:.4;cursor:not-allowed}
+.orbitTimeline{margin:9px 20px 0;padding:13px 12px 17px;border:1px solid #394657;border-radius:6px;background:#0c141e}
+.orbitTimelineTitle{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#bfccdb;font:10px ui-monospace,monospace}
+.orbitTimelineTitle span{color:#7d95a9}
+.orbitTrack{height:30px;position:relative;margin:13px 8px 5px;border-radius:12px;background:linear-gradient(90deg,#203742 0,#46556c 50%,#29334a 100%);border:1px solid #5a7388;box-shadow:inset 0 0 0 6px #101a2699}
+.orbitMarker{position:absolute;z-index:1;top:3px;width:21px;height:21px;transform:translateX(-50%);border-radius:50%;border:2px solid #d5e9ed;background:#82bcc5;box-shadow:0 0 8px #96cbd19c;cursor:pointer}
+.orbitMarker.selected{background:#d1aeef;border-color:#fff;box-shadow:0 0 14px #b7a0df;border-width:3px}
+.orbitEditor{margin:12px 20px 16px;padding:16px;border:1px solid #534d6b;border-radius:7px;background:#181827}
+.orbitSelected{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.orbitSelected strong{color:#e9dcf9;font:700 11px ui-monospace,monospace;letter-spacing:.09em}
+.orbitSelected span{color:#b8a7d2;font:10px ui-monospace,monospace}
+.orbitEditorGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 13px}
+.orbitEditorGrid label select{display:block;width:100%;max-width:100%;margin-top:5px;padding:9px 7px;background:#101922;border:1px solid #556579;color:#c2d6df;border-radius:5px;font:10px ui-monospace,monospace}
+.orbitRemove{margin-top:14px;border:1px solid #725a72;border-radius:5px;background:#2b1d2e;color:#d6bcd6;padding:9px 12px;font:700 10px ui-monospace,monospace;cursor:pointer}
+.orbitEmpty{margin:12px 20px 16px;padding:18px;border:1px dashed #526274;border-radius:6px;background:#101821;color:#8b9fad;font:11px/1.6 ui-monospace,monospace}
+.orbitFooter{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 20px;background:#0b1019;border-top:1px solid #38404d;color:#9fb9c5;font:700 9px/1.5 ui-monospace,monospace;letter-spacing:.055em}
+.orbitFooter b{color:#e4b4aa}
+.orbitLab button:focus-visible,.orbitLab input:focus-visible,.orbitLab select:focus-visible{outline:2px solid #e9ddff;outline-offset:3px}
+@media(max-width:950px){.orbitBody{grid-template-columns:1fr}.orbitScene{max-width:650px;justify-self:center;width:100%}.orbitWorkbench{width:100%}}
+@media(max-width:680px){.orbitHead{flex-wrap:wrap;padding:18px}.orbitBody{padding:15px}.orbitTimeline{margin:8px 15px 0}.orbitEditor{margin:12px 15px}.orbitEditorGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.orbitControls{grid-template-columns:1fr 1fr}}
+@media(max-width:440px){.orbitEditorGrid{grid-template-columns:1fr}.orbitControls{grid-template-columns:1fr}.orbitToggle{width:100%}.orbitActions button{flex:1}.orbitTimelineTitle{flex-wrap:wrap}}
