@@ -184,14 +184,23 @@ useEffect(()=>{
   n.buffer=matchExport?(originalLock?source:processed!):auditionRemoved&&removedSignal?removedSignal:ab==='B'&&processed?processed:source;let offset=playhead>=source.duration-.1?(loop?loopA:0):clamp(playhead,0,Math.max(0,source.duration-.01));if(loop&&offset>=loopB)offset=loopA;n.loop=loop;n.loopStart=loopA;n.loopEnd=Math.max(loopA+.1,loopB);if(ab==='A'||processed){const g=c.createGain(),monitor=c.createGain();g.gain.value=!auditionRemoved&&ab==='A'&&matchAB&&input&&output?Math.pow(10,clamp(output.rms-input.rms,-12,12)/20):1;monitor.gain.value=matchExport?1:Math.pow(10,monitorDb/20);n.connect(g).connect(monitor);if(!matchExport&&immersive&&!(ab==='B'&&spatialMaster)&&source.numberOfChannels>1){const split=c.createChannelSplitter(2),merge=c.createChannelMerger(2),ll=c.createGain(),rr=c.createGain(),lr=c.createGain(),rl=c.createGain();ll.gain.value=1.12;rr.gain.value=1.12;lr.gain.value=-.12;rl.gain.value=-.12;monitor.connect(split);split.connect(ll,0);split.connect(rl,0);split.connect(rr,1);split.connect(lr,1);ll.connect(merge,0,0);lr.connect(merge,0,0);rr.connect(merge,0,1);rl.connect(merge,0,1);merge.connect(c.destination)}else monitor.connect(c.destination);liveNodes.current=null}else{const lo=c.createBiquadFilter(),body=c.createBiquadFilter(),pr=c.createBiquadFilter(),air=c.createBiquadFilter(),comp=c.createDynamicsCompressor(),sh=c.createWaveShaper(),g=c.createGain(),lim=c.createDynamicsCompressor();lo.type='lowshelf';lo.frequency.value=105;lo.gain.value=bypass.tone?0:params.low;body.type='peaking';body.frequency.value=360;body.Q.value=.75;body.gain.value=bypass.tone?0:params.body;pr.type='peaking';pr.frequency.value=2650;pr.Q.value=.85;pr.gain.value=bypass.tone?0:params.presence;air.type='highshelf';air.frequency.value=10500;air.gain.value=bypass.tone?0:params.air;comp.threshold.value=bypass.dynamics?0:params.threshold;comp.knee.value=16;comp.ratio.value=bypass.dynamics?1:params.ratio;comp.attack.value=params.attack;comp.release.value=params.release;const curve=new Float32Array(8192),k=bypass.character?1:1+params.drive*5;for(let i=0;i<curve.length;i++){const x=i*2/(curve.length-1)-1;curve[i]=k===1?x:Math.tanh(x*k)/Math.tanh(k)}sh.curve=curve;sh.oversample='4x';g.gain.value=bypass.master?1:Math.pow(10,params.makeup/20);lim.threshold.value=bypass.master?0:params.ceiling;lim.knee.value=0;lim.ratio.value=bypass.master?1:20;lim.attack.value=.0015;lim.release.value=.09;const monitor=c.createGain();monitor.gain.value=Math.pow(10,monitorDb/20);n.connect(lo).connect(body).connect(pr).connect(air).connect(comp).connect(sh).connect(g).connect(lim).connect(monitor).connect(c.destination);liveNodes.current={tone:[lo,body,pr,air],comp,shaper:sh,gain:g,lim}}n.start(0,offset);node.current=n;startedAt.current=c.currentTime;startOffset.current=offset;setPlaying(true);const tick=()=>{if(!node.current)return;let pos=startOffset.current+(c.currentTime-startedAt.current);if(loop&&pos>=loopB)pos=loopA+((pos-loopA)%(loopB-loopA));setPlayhead(Math.min(pos,source.duration));timer.current=requestAnimationFrame(tick)};tick();n.onended=()=>{if(node.current!==n)return;node.current=null;liveNodes.current=null;if(timer.current!==null){cancelAnimationFrame(timer.current);timer.current=null}setPlaying(false)}}catch(e){if(request!==playbackSeq.current)return;stop();setAudioStatus('blocked');setErr('Audio playback failed: '+(e instanceof Error?e.message:String(e))+'. Try REPAIR AUDIO.')}};const seek=(v:number)=>{stop();setPlayhead(v)};const swap=(v:'A'|'B')=>{stop();setAb(v)};// Synchronous invalidation on Orbit control edits prevents a one-frame window
 // where EXPORT could download the old master before useEffect invalidates it.
 const changeOrbitSettings:React.Dispatch<React.SetStateAction<OrbitSettings>>=(next)=>{
- if(node.current)stop();
- setProcessed(null);
- setOrbitSettings(next);
+ const value=typeof next==='function'?next(orbitSettings):next;
+ const wasActive=orbitSettings.enabled&&orbitSettings.amount>0&&orbitEvents.length>0;
+ const nowActive=value.enabled&&value.amount>0&&orbitEvents.length>0;
+ // Editing settings while Orbits is OFF must NOT invalidate a perfectly valid master.
+ const affectsRender=wasActive!==nowActive||(wasActive&&nowActive&&(
+  value.amount!==orbitSettings.amount||value.rear!==orbitSettings.rear||
+  value.hrtf!==orbitSettings.hrtf||value.motion!==orbitSettings.motion||
+  value.trail!==orbitSettings.trail||value.voicePriority!==orbitSettings.voicePriority
+ ));
+ if(affectsRender){stop();setProcessed(null)}
+ setOrbitSettings(value);
 };
 const changeOrbitEvents:React.Dispatch<React.SetStateAction<OrbitEvent[]>>=(next)=>{
- if(node.current)stop();
- setProcessed(null);
- setOrbitEvents(next);
+ const value=typeof next==='function'?next(orbitEvents):next;
+ // Positions and scout candidates are pure metadata until wet audio is enabled.
+ if(orbitSettings.enabled&&orbitSettings.amount>0){stop();setProcessed(null)}
+ setOrbitEvents(value);
 };
 const stemPatch=(k:StemKey,x:Partial<StemState>)=>{setRoomDirty(true);setStems(s=>({...s,[k]:{...s[k],...x}}))};
 const applyRoomDrag=()=>{const p=roomDragQueued.current;roomDragQueued.current=null;roomDragFrame.current=null;if(!p)return;setRoomDirty(true);if(p.id.startsWith('copy:')){const n=Number(p.id.slice(5));setRoomCopies(cs=>cs.map(c=>c.id===n?{...c,pan:p.pan,depth:p.depth}:c))}else{stemPatch(p.id as StemKey,{pan:p.pan});setRoomDepth(d=>({...d,[p.id]:p.depth}))}};
