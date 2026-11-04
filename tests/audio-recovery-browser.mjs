@@ -33,7 +33,7 @@ try{
  await page.getByRole('button',{name:'Pause audio'}).waitFor({timeout:25000});
  assert.equal(await page.evaluate(()=>window.__lastAudioContext.state),'running','audio context must start running');
  await page.evaluate(async()=>{await window.__lastAudioContext.suspend()});
- await page.getByText(/AUDIO INTERRUPTED · SESSION SAFE/).waitFor({timeout:25000});
+ await page.getByText(/AUDIO PAUSED · SESSION SAFE/).waitFor({timeout:25000});
  await page.getByRole('button',{name:'Play audio'}).click();
  await page.getByRole('button',{name:'Pause audio'}).waitFor({timeout:25000});
  assert.equal(await page.evaluate(()=>window.__lastAudioContext.state),'running','suspended audio context must resume on Play');
