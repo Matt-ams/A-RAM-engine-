@@ -49,6 +49,12 @@ try{
  assert.equal(await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).count(),1,'ROOM layout should be preserved');
  await page.getByRole('button',{name:'Play audio'}).click();
  await page.getByRole('button',{name:'Pause audio'}).waitFor({timeout:25000});
+ await page.locator('input.seek').fill('5');
+ await page.getByRole('button',{name:'Play audio'}).click();
+ await page.getByRole('button',{name:'Pause audio'}).waitFor({timeout:25000});
+ await page.waitForTimeout(350);
+ assert.equal(await page.getByRole('button',{name:'Pause audio'}).count(),1,'replaying at the end of the song must not stop after 10 ms');
+ await page.getByRole('button',{name:'Pause audio'}).click();
  await page.locator('.stemSourceManager summary').click();
  assert(await page.getByText('beat.wav').count()>0 && await page.getByText('lead.wav').count()>0,'source files retained across audio repair');
  assert.equal(errors.length,0,errors.join(' / '));
