@@ -84,8 +84,8 @@ try{
  await orbitsPanel.getByRole('slider',{name:'Orbit rear depth'}).fill('100');
  await orbitsPanel.getByRole('button',{name:/\+ DETAIL AT PLAYHEAD/}).click();
  await orbitsPanel.getByRole('combobox',{name:'Orbit event source'}).selectOption('adlibs');
- await orbitsPanel.getByRole('slider',{name:'Orbit event time'}).fill('1.50');
- await orbitsPanel.getByRole('slider',{name:'Orbit event duration'}).fill('.70');
+ await orbitsPanel.getByRole('slider',{name:'Orbit event time'}).fill('1.5');
+ await orbitsPanel.getByRole('slider',{name:'Orbit event duration'}).fill('0.7');
  await orbitsPanel.getByRole('combobox',{name:'Orbit event route'}).selectOption('front-to-rear-right');
  const stillOff=current.waitForEvent('download');await current.locator('button.export').click();const pcmOffWithScene=await readFile(await (await stillOff).path());
  const bypassParity=compare(pcmOff,pcmOffWithScene);
