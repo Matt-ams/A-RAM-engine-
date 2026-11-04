@@ -7,10 +7,10 @@ export type OrbitSource='mix'|'lead'|'doubles'|'adlibs';
 export type OrbitPath='left-rear-right'|'right-rear-left'|'rear-drift-left'|'rear-drift-right'|'front-left-right'|'front-right-left'|'front-to-rear-left'|'front-to-rear-right'|'rear-to-front-left'|'rear-to-front-right'|'full-orbit-cw'|'full-orbit-ccw';
 export type OrbitBand='detail'|'voice';
 export type OrbitEvent={id:number;source:OrbitSource;at:number;duration:number;path:OrbitPath;band:OrbitBand;level:number};
-export type OrbitSettings={enabled:boolean;amount:number;rear:number;hrtf:boolean;motion?:number;trail?:number};
+export type OrbitSettings={enabled:boolean;amount:number;rear:number;hrtf:boolean;motion?:number;trail?:number;voicePriority?:number};
 export type OrbitStem={buffer:AudioBuffer|null;mute:boolean;solo:boolean};
 export type OrbitStemMap=Partial<Record<Exclude<OrbitSource,'mix'>,OrbitStem>>;
-export const orbitDefaults:OrbitSettings={enabled:false,amount:.4,rear:.78,hrtf:true,motion:.75,trail:.22};
+export const orbitDefaults:OrbitSettings={enabled:false,amount:.4,rear:.78,hrtf:true,motion:.75,trail:.22,voicePriority:.72};
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
 const paths:OrbitPath[]=['left-rear-right','right-rear-left','rear-drift-left','rear-drift-right','front-left-right','front-right-left','front-to-rear-left','front-to-rear-right','rear-to-front-left','rear-to-front-right','full-orbit-cw','full-orbit-ccw'];
 const bands:OrbitBand[]=['detail','voice'];
@@ -23,7 +23,7 @@ export function validOrbitEvent(x:unknown):x is OrbitEvent{
 export function validOrbitSettings(x:unknown):x is OrbitSettings{
  if(!x||typeof x!=='object')return false;
  const s=x as Partial<OrbitSettings>;
- return typeof s.enabled==='boolean'&&typeof s.hrtf==='boolean'&&Number.isFinite(s.amount)&&s.amount!>=0&&s.amount!<=1&&Number.isFinite(s.rear)&&s.rear!>=0&&s.rear!<=1&&(s.motion===undefined||Number.isFinite(s.motion)&&s.motion>=0&&s.motion<=1)&&(s.trail===undefined||Number.isFinite(s.trail)&&s.trail>=0&&s.trail<=1);
+ return typeof s.enabled==='boolean'&&typeof s.hrtf==='boolean'&&Number.isFinite(s.amount)&&s.amount!>=0&&s.amount!<=1&&Number.isFinite(s.rear)&&s.rear!>=0&&s.rear!<=1&&(s.motion===undefined||Number.isFinite(s.motion)&&s.motion>=0&&s.motion<=1)&&(s.trail===undefined||Number.isFinite(s.trail)&&s.trail>=0&&s.trail<=1)&&(s.voicePriority===undefined||Number.isFinite(s.voicePriority)&&s.voicePriority>=0&&s.voicePriority<=1);
 }
 export function orbitEventSources(stems:OrbitStemMap, mode:'stems'|'stereo'):{source:OrbitSource;buffer:AudioBuffer}[]{
  const anySolo=Object.values(stems).some(x=>x?.buffer&&x.solo);
@@ -106,6 +106,25 @@ export const orbitPathPositions=(path:OrbitPath,rear:number,strength:number):Arr
   default:return [left,rearLeft,back,rearRight,right];
  }
 };
+/** Voice-priority detector on the original LEAD stem; only affects wet Orbit gain.
+ * Fixed 32ms windows, 4x sub-sampling; no modification to original mix or LEAD.
+ * 0 = no protection; 1 = strong attenuation of motion when direct LEAD is singing.
+ * Energy gate deliberately avoids following low-level noise in long quiet breaks.
+ */
+export function orbitVoicePriorityGain(lead:AudioBuffer|null,at:number,priority:number,leadIsOrbitSource=false):number{
+ if(!lead||!Number.isFinite(at)||at<0||at>=lead.duration||priority<=0)return 1;
+ const sr=lead.sampleRate;
+ const start=Math.max(0,Math.floor((at-.012)*sr)),end=Math.min(lead.length,start+Math.floor(.032*sr));
+ if(end-start<24)return 1;
+ const data=lead.getChannelData(0);
+ let energy=0,count=0;
+ for(let i=start;i<end;i+=4){const x=data[i];energy+=x*x;count++}
+ const rms=Math.sqrt(energy/Math.max(1,count));
+ const db=20*Math.log10(Math.max(rms,1e-9));
+ const activity=clamp((db+43)/22,0,1);
+ const strength=clamp(priority,0,1)*(leadIsOrbitSource?.43:.86);
+ return 1-strength*activity;
+}
 function motion(param:AudioParam,values:number[],time:number,duration:number){
  param.setValueAtTime(values[0],time);
  for(let i=1;i<values.length;i++)param.linearRampToValueAtTime(values[i],time+duration*i/(values.length-1));
@@ -143,6 +162,20 @@ export async function renderMicroOrbits(
   const coords=orbitPathPositions(event.path,settings.rear,settings.motion??orbitDefaults.motion??.75);
   const rear=ctx.createDelay(.18);rear.delayTime.value=.028+settings.rear*.032;
   const gain=ctx.createGain();gain.gain.value=level;
+  // Explicit vocal headroom: motion gets quieter wherever the unprocessed
+  // main LEAD is active, while the direct LEAD stays entirely unchanged.
+  const mainLead=stems.lead&&!stems.lead.mute&&(!anySolo||stems.lead.solo)?stems.lead.buffer:null;
+  const protection=clamp(settings.voicePriority??orbitDefaults.voicePriority??.72,0,1);
+  if(mainLead&&protection>0){
+   const slices=Math.max(1,Math.ceil(d/.025));
+   for(let k=0;k<=slices;k++){
+    const position=d*k/slices;
+    const relativeGain=orbitVoicePriorityGain(mainLead,t+position,protection,event.source==='lead');
+    const time=t+rear.delayTime.value+position;
+    if(k===0)gain.gain.setValueAtTime(level*relativeGain,time);
+    else gain.gain.linearRampToValueAtTime(level*relativeGain,time);
+   }
+  }
   env.connect(rear).connect(gain);
   if(settings.hrtf){
    const panner=ctx.createPanner();panner.panningModel='HRTF';panner.distanceModel='inverse';
