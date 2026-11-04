@@ -8,7 +8,7 @@ type Props={
  mix:AudioBuffer; mode:'stems'|'stereo';stems:OrbitStemMap;
  events:OrbitEvent[];setEvents:Dispatch<SetStateAction<OrbitEvent[]>>;
  settings:OrbitSettings;setSettings:Dispatch<SetStateAction<OrbitSettings>>;
- playhead:number;originalLock:boolean;roomPending?:boolean;
+ playhead:number;playing:boolean;onTogglePlay:()=>void;onSeek:(seconds:number)=>void;originalLock:boolean;roomPending?:boolean;
 };
 const paths:{id:OrbitPath;label:string}[]=[
  {id:'left-rear-right',label:'LEFT → REAR → RIGHT'},
@@ -27,8 +27,21 @@ const paths:{id:OrbitPath;label:string}[]=[
 const clock=(seconds:number)=>`${Math.floor(seconds/60)}:${Math.floor(seconds%60).toString().padStart(2,'0')}`;
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
 const svgPath=(p:Array<[number,number]>)=>p.map(([x,z],i)=>`${i===0?'M':'L'} ${(240+x*65).toFixed(2)} ${(127+z*44).toFixed(2)}`).join(' ');
-export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settings,setSettings,playhead,originalLock,roomPending=false}:Props){
+export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settings,setSettings,playhead,playing,onTogglePlay,onSeek,originalLock,roomPending=false}:Props){
  const [selectedId,setSelectedId]=useState<number|null>(null);
+ // Downsample once per source buffer, NOT 60 times per second while playback moves.
+ const waveform=useMemo(()=>{
+  const data=mix.getChannelData(0),bins=224,step=Math.max(1,Math.floor(data.length/bins));
+  const top:string[]=[],bottom:string[]=[];
+  for(let i=0;i<bins;i++){
+   let peak=0;const begin=i*step,finish=Math.min(data.length,begin+step);
+   for(let j=begin;j<finish;j+=Math.max(1,Math.floor(step/55)))peak=Math.max(peak,Math.abs(data[j]));
+   const value=Math.max(2,Math.min(29,peak*40));
+   top.push(`${i===0?'M':'L'} ${(i*1000/(bins-1)).toFixed(1)} ${(34-value).toFixed(1)}`);
+   bottom.push(`L ${(i*1000/(bins-1)).toFixed(1)} ${(34+value).toFixed(1)}`);
+  }
+  return top.join(' ')+' '+bottom.reverse().join(' ')+' Z';
+ },[mix]);
  const selected=events.find(e=>e.id===selectedId)??events[0]??null;
  const candidates=useMemo(()=>orbitEventSources(stems,mode).map(s=>s.source),[stems,mode]);
  const availableSources:OrbitSource[]=mode==='stems'?[...candidates,'mix']:['mix'];
@@ -43,7 +56,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
   setSelectedId(id);
   const event:OrbitEvent={id,source,at,duration,path:'front-to-rear-left',band:source==='lead'?'voice':'detail',level:.75};return [...prev,event].sort((a,b)=>a.at-b.at);
  })};
- const scan=()=>{const proposals=scoutMicroOrbits(mix,stems,mode,7);
+ const scan=(around=false)=>{const proposals=scoutMicroOrbits(mix,stems,mode,around?4:7,around?playhead:undefined);
   setEvents(proposals);setSelectedId(proposals[0]?.id??null);
  };
  const points=orbitPathPositions(selected?.path??'left-rear-right',settings.rear,settings.motion??.75);
@@ -88,11 +101,16 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
      <label>TRAJECTORY SPAN <b>{Math.round((settings.motion??.75)*100)}%</b><input aria-label='Orbit trajectory span' type='range' min='0' max='100' step='5' value={(settings.motion??.75)*100} onChange={e=>updateSetting('motion',Number(e.target.value)/100)}/></label>
      <label>REAR PERSISTENCE <b>{Math.round((settings.trail??.22)*100)}%</b><input aria-label='Orbit rear persistence' type='range' min='0' max='100' step='5' value={(settings.trail??.22)*100} onChange={e=>updateSetting('trail',Number(e.target.value)/100)}/></label>
     </div>
+    <div className='orbitControls orbitVoiceProtect'>
+      <label>VOICE PRIORITY · WET DUCK <b>{Math.round((settings.voicePriority??.72)*100)}%</b><input aria-label='Orbit voice priority' type='range' min='0' max='100' step='5' value={(settings.voicePriority??.72)*100} onChange={e=>updateSetting('voicePriority',Number(e.target.value)/100)}/></label>
+      <small>{mode==='stems'&&stems.lead?.buffer&&!stems.lead.mute?'LEAD detected · mobile reflections automatically yield while your main vocal is singing.':'Requires an active LEAD stem for automatic vocal priority; no separation of voices from stereo mixes.'} Main LEAD and BEAT are never ducked.</small>
+    </div>
     <button className={settings.hrtf?'orbitHrtf on':'orbitHrtf'} aria-pressed={settings.hrtf} onClick={()=>updateSetting('hrtf',!settings.hrtf)}>3D HRTF · WET ONLY {settings.hrtf?'ON':'OFF'}</button>
     <p className='orbitDetailNote'>WET-only fragments, gain-limited. Turn 3D HRTF ON for front/back cues; OFF reduces to left/right stereo. If Safari sounds boxy, compare both. This is NOT discrete Atmos.</p>
     {roomPending&&<p className='orbitPending' role='status'>STEMS CHANGED OR ROOM SETTINGS PENDING · REBUILD ROOM BUS BEFORE USING SMART SCOUT OR RE-ENABLING ORBITS.</p>}
     <div className='orbitActions'>
-     <button onClick={scan} disabled={roomPending||mix.duration<.8}>SMART SCOUT · FIND DETAILS</button>
+     <button onClick={()=>scan(true)} disabled={roomPending||mix.duration<.8}>SCOUT THIS BREAK · ±4s</button>
+     <button onClick={()=>scan(false)} disabled={roomPending||mix.duration<.8}>SCOUT WHOLE TRACK</button>
      <button onClick={addManual} disabled={roomPending||events.length>=12||mix.duration<.8}>+ DETAIL AT PLAYHEAD ({clock(playhead)})</button>
      <button onClick={()=>{setEvents([]);setSelectedId(null)}} disabled={!events.length}>CLEAR</button>
     </div>
@@ -100,10 +118,24 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
    </div>
   </div>
   <div className='orbitTimeline'>
-   <div className='orbitTimelineTitle'><b>EVENT MAP</b><span>{events.length} / 12 micro-events · {mix.duration.toFixed(1)}s</span></div>
-   <div className='orbitTrack' role='group' aria-label='Selected micro-events along track'>
-    {events.map(e=><button key={e.id} className={selected?.id===e.id?'orbitMarker selected':'orbitMarker'} title={`${e.source.toUpperCase()} · ${clock(e.at)} · ${e.path}`} style={{left:`${clamp(e.at/mix.duration*100,0,99)}%`}} aria-label={`Event ${e.source} at ${clock(e.at)}`} onClick={()=>setSelectedId(e.id)}/>)}
-   </div>
+    <div className='orbitTimelineTitle'><b>ORBIT SYNC TIMELINE · SAME CLOCK AS MAIN PLAYER</b><span>{events.length} / 12 events</span></div>
+    <div className='orbitMiniTransport'>
+      <button aria-label={playing?'Pause from Orbit timeline':'Play from Orbit timeline'} onClick={onTogglePlay}>{playing?'Ⅱ  PAUSE':'▶  PLAY'}</button>
+      <b className='orbitTimecode' aria-label='Orbit current time'>{clock(playhead)} / {clock(mix.duration)}</b>
+      <span>{events.find(e=>playhead>=e.at&&playhead<e.at+e.duration)?'● WET DETAIL IN THIS SECTION':'ROOM BUS / MASTER PLAYHEAD'}</span>
+    </div>
+    <div className='orbitMiniWave' aria-label='Orbit mini waveform synchronized to main song'>
+      <svg viewBox='0 0 1000 68' preserveAspectRatio='none' aria-hidden='true'><path d={waveform} fill='#769fb2' opacity='.7'/><path d='M 0 34 L 1000 34' stroke='#7799a7' strokeOpacity='.25'/></svg>
+      <div className='orbitEventRegions' aria-hidden='true'>
+        {events.map(e=><span key={e.id} className={selected?.id===e.id?'orbitEventRegion selected':'orbitEventRegion'} style={{left:`${clamp(e.at/mix.duration*100,0,99.8)}%`,width:`${Math.max(.3,Math.min(100-e.at/mix.duration*100,e.duration/mix.duration*100))}%`}}/>)}
+      </div>
+      <div className='orbitMiniCursor' data-testid='orbit-synced-playhead' style={{left:`${clamp(playhead/mix.duration*100,0,100)}%`}}/>
+      <input className='orbitMiniSeek' aria-label='Orbit synced timeline seek' type='range' min='0' max={mix.duration} step='.01' value={playhead} onChange={e=>onSeek(Number(e.target.value))}/>
+    </div>
+    <div className='orbitMiniRuler'><small>0:00</small><small>SELECT A BREAK BELOW OR DRAG THE PLAYHEAD ABOVE</small><small>{clock(mix.duration)}</small></div>
+    <div className='orbitTrack' role='group' aria-label='Selected micro-events along track'>
+      {events.map(e=><button key={e.id} className={selected?.id===e.id?'orbitMarker selected':'orbitMarker'} title={`${e.source.toUpperCase()} · ${clock(e.at)} · ${e.path}`} style={{left:`${clamp(e.at/mix.duration*100,0,99)}%`}} aria-label={`Event ${e.source} at ${clock(e.at)}`} onClick={()=>{setSelectedId(e.id);onSeek(e.at)}}/>)}
+    </div>
   </div>
   {selected?<div className='orbitEditor'>
    <div className='orbitSelected'><strong>DETAIL {events.indexOf(selected)+1} · {selected.source.toUpperCase()}</strong><span>{clock(selected.at)} → {clock(selected.at+selected.duration)} · WET ONLY</span></div>
