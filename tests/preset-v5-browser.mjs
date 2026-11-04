@@ -37,8 +37,8 @@ try{
  await page.locator('.haloPanel input[type=range]').fill('32');
  await page.getByRole('button',{name:/DUPLICATE BEAT/}).click();
  const copy=page.locator('.roomCopyRow').first();
- await copy.locator('input[type=range]').nth(0).fill('.82');
- await copy.locator('input[type=range]').nth(1).fill('-.48');
+ await copy.locator('input[type=range]').nth(0).fill('0.82');
+ await copy.locator('input[type=range]').nth(1).fill('-0.48');
  await page.locator('.roomRebuild').click();
  await page.locator('.roomVersion span').filter({hasText:'SYNCED'}).waitFor({timeout:40000});
  await page.waitForFunction(()=>{const b=document.querySelector('button.export');return b&&!b.hasAttribute('disabled')},null,{timeout:90000});
