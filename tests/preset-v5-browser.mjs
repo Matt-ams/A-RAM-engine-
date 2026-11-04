@@ -81,6 +81,7 @@ try{
  assert.equal(pcm1.length,pcm2.length,'WAV dimensions must match');
  let differing=0,largestDiff=0;
  for(let i=44;i<pcm1.length;i++){if(pcm1[i]!==pcm2[i]){differing++;largestDiff=Math.max(largestDiff,Math.abs(pcm1[i]-pcm2[i]))}}
+ if(differing){const p=44;const samples=(buf)=>Array.from({length:12},(_,k)=>{const i=p+k*3;const x=buf[i]|buf[i+1]<<8|buf[i+2]<<16;return (x&0x800000)?x-0x1000000:x});console.log('PCM-DEBUG',JSON.stringify({bytes:pcm1.length,differing,largestDiff,first:samples(pcm1),second:samples(pcm2),firstWavHeader:pcm1.toString('hex',0,44),secondWavHeader:pcm2.toString('hex',0,44),stemMixed:preset.stemMix,halo:preset.haloAmount,copy:preset.roomCopies,roomMode:preset.haloMode}));}
  assert.equal(differing,0,'full V5 preset roundtrip should recreate sample-identical WAV for the same files');
  // Legacy preset compatibility: restore ROOM but accurately warn that original stem settings were never stored.
  await page.getByRole('button',{name:/NEW SESSION/}).click();
