@@ -53,7 +53,7 @@ const scoreFragment=(buffer:AudioBuffer,t:number)=>{
  * In STEM mode never proposes BEAT; prefer ADLIBS > DOUBLES > tiny LEAD fragments.
  * In stereo mode proposes only bright selected MIX fragments, never entire beat.
  */
-export function scoutMicroOrbits(mix:AudioBuffer,stems:OrbitStemMap,mode:'stems'|'stereo',count=6):OrbitEvent[]{
+export function scoutMicroOrbits(mix:AudioBuffer,stems:OrbitStemMap,mode:'stems'|'stereo',count=6,focusTime?:number):OrbitEvent[]{
  if(!mix||mix.duration<.8)return [];
  const candidates=orbitEventSources(stems,mode);
  if(!candidates.length)candidates.push({source:'mix',buffer:mix});
@@ -62,6 +62,7 @@ export function scoutMicroOrbits(mix:AudioBuffer,stems:OrbitStemMap,mode:'stems'
  for(const {source,buffer} of candidates){
   const until=Math.min(mix.duration,buffer.duration)-.8;
   for(let time=.4;time<until;time+=.17){
+   if(Number.isFinite(focusTime)&&Math.abs(time-focusTime!)>4)continue;
    const {score,energy}=scoreFragment(buffer,time);
    if(energy<.0015)continue;
    const preference=source==='adlibs'?1.9:source==='doubles'?1.48:source==='lead'?.90:.5;
