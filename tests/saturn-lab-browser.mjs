@@ -46,6 +46,13 @@ try{
  browser=await engine.launch({headless:true,args:engine===webkit?[]:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1440,height:950},acceptDownloads:true});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{
+  const old=AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start=function(...args){
+   if(this.context instanceof AudioContext)window.__saturnActualPlayback=this.buffer;
+   return old.apply(this,args);
+  };
+ });
  await page.goto('http://127.0.0.1:'+port+'/',{waitUntil:'networkidle'});
  const dsp=await page.evaluate(async()=>{
   const {renderSaturn,scoutSaturn,saturnDefaults,saturnPathPoints,validSaturnEvent,validSaturnSettings,SATURN_MAX_EVENTS}
@@ -147,6 +154,25 @@ try{
  assert.equal(shifted.length,baseline.length);
  assert(maxPcmDelta(baseline,shifted,.0,.4).max<.0003,'SATURN does not alter the start of master before motion');
  assert(maxPcmDelta(baseline,shifted,1.0,1.45).max>.00005,'SATURN edits only intended audible events');
+ // B + EXPORT MATCH must audibly use the same SATURN-processed AudioBuffer
+ // that wav24 writes. Verify sample values, not just buffer identity.
+ await page.getByRole('button',{name:'Play audio'}).click();
+ await page.getByRole('button',{name:'Pause audio'}).waitFor({timeout:15000});
+ const actual=await page.evaluate(()=>{
+  const b=window.__saturnActualPlayback;if(!b)return null;
+  const selected=[0,111,999,Math.round(b.sampleRate*.95),Math.round(b.sampleRate*1.25)];
+  return selected.flatMap(i=>[0,1].map(ch=>({i,ch,value:b.getChannelData(ch)[i]})));
+ });
+ assert(actual&&actual.length===10,'must capture SATURN actual B Web Audio output buffer');
+ let playbackDiff=0;
+ for(const {i,ch,value} of actual){
+  const offset=44+(i*2+ch)*3;
+  let pcm=shifted[offset]|shifted[offset+1]<<8|shifted[offset+2]<<16;
+  if(pcm&0x800000)pcm-=0x1000000;
+  playbackDiff=Math.max(playbackDiff,Math.abs(value-pcm/8388608));
+ }
+ assert(playbackDiff<.00000024,'SATURN EXPORT MATCH B must match the WAV within PCM24+dither');
+ await page.getByRole('button',{name:'Pause audio'}).click();
  await saturn.getByRole('button',{name:'EXPERIMENTAL HRTF · WET ONLY OFF'}).click();
  await page.waitForFunction(()=>{const b=document.querySelector('button.export');return b&&!b.disabled},null,{timeout:110000});
  const dlH=page.waitForEvent('download');await page.locator('button.export').click();const hrtf=await readFile(await (await dlH).path());
@@ -182,5 +208,5 @@ try{
  await saturnRestored.getByRole('button',{name:'SATURN preset sliding field'}).click();
  assert.equal(await saturnRestored.getByRole('slider',{name:'SATURN SLIDE / GLIDE'}).inputValue(),'96','named SLIDING FIELD preset must apply');
  assert.equal(errors.length,0,errors.join('\\n'));
- console.log('SATURN LAB V0.1 PASS',JSON.stringify({browser:engine===webkit?'webkit':'chromium',dsp,initialMasterUntouched:true,rearMotionRenders:true,hrtfWetOnly:true,presetV6Restored:true,orbitV46Unchanged:true,legacyEventCopiedNonDestructively:true,namedSaturnPresetTested:true}));
+ console.log('SATURN LAB V0.1 PASS',JSON.stringify({browser:engine===webkit?'webkit':'chromium',dsp,initialMasterUntouched:true,rearMotionRenders:true,hrtfWetOnly:true,presetV6Restored:true,orbitV46Unchanged:true,saturnWavPlaybackParity:true,legacyEventCopiedNonDestructively:true,namedSaturnPresetTested:true}));
 }finally{await browser?.close();server.kill('SIGTERM')}
