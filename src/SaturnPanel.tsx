@@ -1,7 +1,7 @@
 import {useMemo,useState,type Dispatch,type SetStateAction} from 'react';
-import type {OrbitStemMap,OrbitSource} from './audio/microOrbits';
+import type {OrbitStemMap,OrbitSource,OrbitEvent,OrbitPath} from './audio/microOrbits';
 import {
- SATURN_MAX_EVENTS,scoutSaturn,saturnPathPoints,type SaturnEvent,type SaturnPath,type SaturnSettings
+ SATURN_MAX_EVENTS,scoutSaturn,saturnPathPoints,saturnDefaults,type SaturnEvent,type SaturnPath,type SaturnSettings
 } from './audio/saturn';
 
 type Props={
@@ -9,7 +9,7 @@ type Props={
  settings:SaturnSettings;setSettings:Dispatch<SetStateAction<SaturnSettings>>;
  events:SaturnEvent[];setEvents:Dispatch<SetStateAction<SaturnEvent[]>>;
  playhead:number;onSeek:(time:number)=>void;
- roomPending:boolean;legacyOrbitsActive:boolean;originalLock:boolean;
+ roomPending:boolean;legacyOrbitsActive:boolean;legacyEvents:OrbitEvent[];originalLock:boolean;
 };
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const clock=(s:number)=>Math.floor(s/60)+':'+Math.floor(s%60).toString().padStart(2,'0');
@@ -30,7 +30,7 @@ function Slider({name,value,onChange}: {name:string;value:number;onChange:(n:num
 }
 export default function SaturnPanel({
  mix,mode,stems,settings,setSettings,events,setEvents,playhead,onSeek,
- roomPending,legacyOrbitsActive,originalLock
+ roomPending,legacyOrbitsActive,legacyEvents,originalLock
 }:Props){
  const [selectedId,setSelectedId]=useState<number|null>(null);
  const selected=events.find(e=>e.id===selectedId)??events[0]??null;
@@ -54,6 +54,26 @@ export default function SaturnPanel({
   };
   setEvents(xs=>[...xs,e].sort((a,b)=>a.at-b.at));setSelectedId(e.id);
  };
+ const legacyRoutes:Record<OrbitPath,SaturnPath>={
+  'left-rear-right':'rear-left-right','right-rear-left':'rear-right-left',
+  'rear-drift-left':'rear-right-left','rear-drift-right':'rear-left-right',
+  'front-left-right':'slide-left-rear','front-right-left':'slide-right-rear',
+  'front-to-rear-left':'slide-left-rear','front-to-rear-right':'slide-right-rear',
+  'rear-to-front-left':'rear-right-left','rear-to-front-right':'rear-left-right',
+  'full-orbit-cw':'rear-loop-cw','full-orbit-ccw':'rear-loop-ccw'
+ };
+ const copyLegacy=()=>{
+  if(roomPending||!legacyEvents.length)return;
+  const available=SATURN_MAX_EVENTS-events.length;
+  if(available<=0)return;
+  const old=legacyEvents.filter(e=>events.every(x=>x.source!==e.source||Math.abs(x.at-e.at)>.25)).slice(0,available);
+  const begin=nextId(events);
+  const additions:SaturnEvent[]=old.map((e,i)=>({
+   id:begin+i,source:e.source,at:e.at,duration:clamp(e.duration,.15,3.2),
+   path:legacyRoutes[e.path],level:e.level
+  }));
+  if(additions.length){setEvents(xs=>[...xs,...additions].sort((a,b)=>a.at-b.at));setSelectedId(additions[0].id)}
+ };
  const route=saturnPathPoints(selected?.path??'slide-left-rear',settings.depth,settings.glide);
  const routeStart=point(route[0]),routeEnd=point(route[route.length-1]);
  const active=selected&&playhead>=selected.at&&playhead<=selected.at+selected.duration;
@@ -64,6 +84,11 @@ export default function SaturnPanel({
   route[index][0]*(1-mixRatio)+route[index+1][0]*mixRatio,
   route[index][1]*(1-mixRatio)+route[index+1][1]*mixRatio
  ]);
+ const trailPoint:[number,number]=[
+  route[index][0]*(1-mixRatio)+route[index+1][0]*mixRatio,
+  route[index][1]*(1-mixRatio)+route[index+1][1]*mixRatio
+ ];
+ const visibleRoute=route.slice(0,index+1).concat([trailPoint]);
  const sourceOptions=mode==='stems'
   ?([...(['adlibs','doubles','lead'] as const).filter(k=>stems[k]?.buffer&&!stems[k]?.mute),'mix'] as OrbitSource[])
   :(['mix'] as OrbitSource[]);
@@ -96,11 +121,12 @@ export default function SaturnPanel({
      <circle cx='230' cy='52' r='5' fill='#f3c57d'/><text x='230' y='67' textAnchor='middle' fill='#f9deb9' fontSize='10'>LEAD</text>
      <circle cx='318' cy='52' r='5' fill='#9ad7d2'/><text x='318' y='67' textAnchor='middle' fill='#d6ebea' fontSize='10'>SNARE</text>
      <text x='230' y='283' textAnchor='middle' fill='#93a7c4' fontSize='12' letterSpacing='3'>REAR RESONANCE FIELD</text>
-     <path d={pathSvg(route)} fill='none' stroke='url(#saturnTrailGradient)' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round'/>
+     <path d={pathSvg(route)} fill='none' stroke='url(#saturnTrailGradient)' opacity='.55' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round'/>
+     {active&&<path d={pathSvg(visibleRoute)} fill='none' stroke='#d8c0ff' strokeWidth='5' strokeLinecap='round' strokeLinejoin='round' opacity='.97'/>}
      <circle cx={routeStart.x} cy={routeStart.y} r='5' fill='#8be2e2'/><circle cx={routeEnd.x} cy={routeEnd.y} r='5' fill='#ffe1a0'/>
      {active&&<circle cx={travelPoint.x} cy={travelPoint.y} r='9' fill='#d8c0ff' opacity='.93' stroke='#fff' strokeWidth='1.5'/>}
     </svg>
-    <small>Selected event route · the dot follows the shared playhead; this diagram is not a measured 3D sound field.</small>
+    <small>Selected event: glowing path and dot follow the shared playhead. This diagram is not a measured 3D sound field.</small>
     <div className='saturnStatus'>
      <strong>{events.length} / {SATURN_MAX_EVENTS} EVENTS</strong>
      <span>{settings.enabled?'WET FIELD ACTIVE':'BYPASSED · TT3 MASTER UNCHANGED'}</span>
@@ -125,6 +151,14 @@ export default function SaturnPanel({
      <Slider name='REAR TRAIL' value={settings.trail} onChange={v=>updateSettings('trail',v)}/>
      <Slider name='LEAD PRIORITY' value={settings.voicePriority} onChange={v=>updateSettings('voicePriority',v)}/>
     </div>
+    <div className='saturnPresetRow'>
+     <button onClick={()=>setSettings({...saturnDefaults,enabled:true})} aria-label='SATURN preset deep rear'>
+      SATURN PRESET · DEEP REAR
+     </button>
+     <button onClick={()=>setSettings({...saturnDefaults,enabled:true,glide:.96,trail:.34,wet:.42})} aria-label='SATURN preset sliding field'>
+      SATURN PRESET · SLIDING FIELD
+     </button>
+    </div>
     <div className='saturnSwitches'>
      <button aria-pressed={settings.hrtf} className={settings.hrtf?'selected':''} onClick={()=>updateSettings('hrtf',!settings.hrtf)}>
       EXPERIMENTAL HRTF · WET ONLY {settings.hrtf?'ON':'OFF'}
@@ -138,6 +172,7 @@ export default function SaturnPanel({
     {originalLock&&<p className='saturnCaution'>ORIGINAL LOCK is active: WAV export intentionally bypasses SATURN and all mastering. Disable lock only if you want to export processed audio.</p>}
     {roomPending&&<p className='saturnCaution'>STEMS CHANGED · REBUILD ROOM BUS before auditioning or scouting.</p>}
     <div className='saturnActions'>
+     <button disabled={roomPending||legacyEvents.length===0||events.length>=SATURN_MAX_EVENTS} onClick={copyLegacy}>COPY V4.6 EVENTS → SATURN</button>
      <button disabled={roomPending||events.length>=SATURN_MAX_EVENTS||mix.duration<.8} onClick={()=>scout(true)}>SCOUT BREAK · ±5s</button>
      <button disabled={roomPending||events.length>=SATURN_MAX_EVENTS||mix.duration<.8} onClick={()=>scout(false)}>SCOUT FULL · +24 MAX</button>
      <button disabled={roomPending||events.length>=SATURN_MAX_EVENTS||mix.duration<.8} onClick={addAtPlayhead}>+ EVENT AT PLAYHEAD</button>
