@@ -199,3 +199,43 @@ html{scrollbar-gutter:stable}
 .exportAuditResult strong{font:800 10px ui-monospace,monospace;color:#e5f1f2}
 .exportAuditResult span{font:10px/1.55 ui-monospace,monospace;color:#c1d0d8}
 .exportAuditError{padding:9px 11px;border:1px solid #a37867;color:#f5b7a7;background:#291e22;border-radius:4px}
+
+/* SATURN LAB V0.1: fully isolated visual system. Never changes audio data. */
+.saturnLab{margin:26px 0;padding:22px;border:1px solid #526c86;border-radius:15px;background:linear-gradient(150deg,#111e2c 0%,#0c131d 65%,#11131e 100%);color:#e4edf4}
+.saturnHeading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:20px}
+.saturnHeading>div{min-width:0}.saturnEyebrow{font:700 10px ui-monospace,monospace;color:#8eafbc;letter-spacing:.13em}
+.saturnHeading h2{font-size:31px;letter-spacing:.13em;margin:7px 0;color:#f4f5f5}
+.saturnHeading h2 span{font-size:12px;color:#aab9ca;font-weight:500;letter-spacing:.12em;margin-left:10px}
+.saturnHeading p{font:12px/1.7 ui-monospace,monospace;color:#acbbca;max-width:850px;margin:4px 0}
+.saturnPower{flex:none;border:1px solid #6d8093;border-radius:7px;padding:14px 18px;color:#bad0df;background:#162431;font:800 11px ui-monospace,monospace;letter-spacing:.1em;cursor:pointer}
+.saturnPower.selected{border-color:#9ae3d6;background:#225a58;color:#d4fffb}
+.saturnLab button:focus-visible,.saturnLab input:focus-visible,.saturnLab select:focus-visible{outline:2px solid #b2f5f3;outline-offset:2px}
+.saturnLab button:disabled{opacity:.38;cursor:not-allowed}
+.saturnColumns{display:grid;grid-template-columns:minmax(320px,1fr) minmax(330px,1.15fr);gap:24px}
+.saturnStage{border:1px solid #2c4860;border-radius:11px;background:#0d1623;padding:12px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.saturnStage svg{width:100%;height:auto;display:block}
+.saturnStage small,.saturnControls small{font:10px/1.6 ui-monospace,monospace;color:#93acbf}
+.saturnStatus{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #314052;padding:12px 2px 0;font:700 10px ui-monospace,monospace;letter-spacing:.03em;color:#d8eae9}
+.saturnStatus span{font-weight:500;color:#9fc8c7}
+.saturnTimeline{padding:13px;border:1px solid #243e50;border-radius:6px;background:#111d2b}
+.saturnTimelineHead{display:flex;align-items:center;justify-content:space-between;font:11px ui-monospace,monospace;color:#b7ccdb;margin-bottom:14px}
+.saturnTimelineTrack{position:relative;height:38px;border-radius:4px;border:1px solid #394b5c;background:repeating-linear-gradient(90deg,transparent 0 9.85%,rgba(255,255,255,.06) 10%),linear-gradient(#101821,#222e41);overflow:visible}
+.saturnMarker{position:absolute;top:4px;width:5px;height:28px;margin-left:-2px;padding:0;border-radius:2px;background:#80b9c7;border:0;cursor:pointer}
+.saturnMarker.selected{background:#eac892;box-shadow:0 0 0 2px #cfb78655,0 0 14px #ddc48b60}
+.saturnCursor{position:absolute;top:0;bottom:0;width:2px;pointer-events:none;background:#fff;opacity:.9}
+.saturnControls{display:flex;flex-direction:column;gap:14px;min-width:0}
+.saturnControlGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.saturnSlider{display:grid;gap:7px;min-width:0;font:700 10px ui-monospace,monospace;color:#c7dbe4;letter-spacing:.07em}
+.saturnSlider>span{display:flex;justify-content:space-between;gap:7px;align-items:center}
+.saturnSlider b{color:#a7e0d8;font-size:10px}
+.saturnSlider input{width:100%;min-width:0;accent-color:#9acfc9;cursor:pointer}
+.saturnSwitches,.saturnActions{display:flex;flex-wrap:wrap;gap:8px}
+.saturnSwitches button,.saturnActions button,.saturnEventEditor button{border-radius:5px;background:#19283b;border:1px solid #435e71;color:#d3e5ee;font:800 10px/1.5 ui-monospace,monospace;padding:10px 12px;cursor:pointer;letter-spacing:.04em}
+.saturnSwitches button.selected{background:#376368;border-color:#94c3bd;color:#eafff8}
+.saturnCaution{font:11px/1.6 ui-monospace,monospace;color:#f2ce9e;border:1px solid #856448;border-radius:5px;padding:11px;margin:0;background:#342a25}
+.saturnEventEditor{display:grid;gap:11px;background:#152031;border:1px solid #35485d;border-radius:8px;padding:14px}
+.saturnEventEditor>b{font:800 11px ui-monospace,monospace;letter-spacing:.09em;color:#f2debc}
+.saturnEventEditor>label:not(.saturnSlider){display:grid;gap:6px;font:700 10px ui-monospace,monospace;color:#c8d9e2}
+.saturnEventEditor select{width:100%;font:11px ui-monospace,monospace;background:#1d2d40;color:#eff6f8;border:1px solid #4c6779;border-radius:4px;padding:9px}
+@media(max-width:920px){.saturnColumns{grid-template-columns:1fr}}
+@media(max-width:600px){.saturnLab{padding:12px}.saturnHeading{flex-direction:column;align-items:stretch}.saturnHeading h2{font-size:24px}.saturnHeading h2 span{display:block;margin-left:0}.saturnControlGrid{grid-template-columns:1fr}.saturnStatus{flex-direction:column}.saturnPower{width:100%}}
