@@ -150,6 +150,17 @@ try{
  assert.equal(await saturnRestored.getByRole('button',{name:'SATURN LAYER · ON'}).count(),1);
  assert.equal(await saturnRestored.getByRole('combobox',{name:'SATURN selected event'}).locator('option').count(),1);
  assert.equal(await saturnRestored.getByRole('button',{name:'EXPERIMENTAL HRTF · WET ONLY ON'}).count(),1);
- assert.equal(errors.length,0,errors.join('\n'));
- console.log('SATURN LAB V0.1 PASS',JSON.stringify({browser:engine===webkit?'webkit':'chromium',dsp,initialMasterUntouched:true,rearMotionRenders:true,hrtfWetOnly:true,presetV6Restored:true,orbitV46Unchanged:true}));
+ // Explicitly clone approved V4.6 events into SATURN, never move/change the original.
+ await page.locator('input.seek').fill('2.15');
+ const orbitPanel=page.getByRole('region',{name:'Rear Orbits Micro Events'});
+ await orbitPanel.getByRole('button',{name:/\\+ DETAIL AT PLAYHEAD/}).click();
+ const originalOrbitCount=await page.locator('.orbitMarker').count();
+ assert(originalOrbitCount>=1,'V4.6 original event exists');
+ await saturnRestored.getByRole('button',{name:/COPY V4.6 EVENTS/}).click();
+ assert.equal(await saturnRestored.getByRole('combobox',{name:'SATURN selected event'}).locator('option').count(),2,'SATURN now contains copied event');
+ assert.equal(await page.locator('.orbitMarker').count(),originalOrbitCount,'V4.6 scene must not be changed by copy');
+ await saturnRestored.getByRole('button',{name:'SATURN preset sliding field'}).click();
+ assert.equal(await saturnRestored.getByRole('slider',{name:'SATURN SLIDE / GLIDE'}).inputValue(),'96','named SLIDING FIELD preset must apply');
+ assert.equal(errors.length,0,errors.join('\\n'));
+ console.log('SATURN LAB V0.1 PASS',JSON.stringify({browser:engine===webkit?'webkit':'chromium',dsp,initialMasterUntouched:true,rearMotionRenders:true,hrtfWetOnly:true,presetV6Restored:true,orbitV46Unchanged:true,legacyEventCopiedNonDestructively:true,namedSaturnPresetTested:true}));
 }finally{await browser?.close();server.kill('SIGTERM')}
