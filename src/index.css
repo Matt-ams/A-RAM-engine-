@@ -239,3 +239,8 @@ html{scrollbar-gutter:stable}
 .saturnEventEditor select{width:100%;font:11px ui-monospace,monospace;background:#1d2d40;color:#eff6f8;border:1px solid #4c6779;border-radius:4px;padding:9px}
 @media(max-width:920px){.saturnColumns{grid-template-columns:1fr}}
 @media(max-width:600px){.saturnLab{padding:12px}.saturnHeading{flex-direction:column;align-items:stretch}.saturnHeading h2{font-size:24px}.saturnHeading h2 span{display:block;margin-left:0}.saturnControlGrid{grid-template-columns:1fr}.saturnStatus{flex-direction:column}.saturnPower{width:100%}}
+
+/* SATURN named scenes are one-click parameter presets; never overwrite event data. */
+.saturnPresetRow{display:flex;flex-wrap:wrap;gap:10px}
+.saturnPresetRow button{border:1px solid #c0a1d2;background:linear-gradient(125deg,#2f344e,#182f41);color:#f4e7fe;font:800 11px ui-monospace,monospace;letter-spacing:.07em;border-radius:7px;padding:11px 15px;cursor:pointer}
+.saturnPresetRow button:hover{background:linear-gradient(125deg,#414966,#244558)}
