@@ -78,6 +78,25 @@ try{
    }
    return {delta,wetRms:Math.sqrt(energy/count),peak,finite};
   };
+  // Deliberately adversarial: 48 close reflections on top of a very loud dry master.
+  // SATURN must constrain only moving wet contribution, never push or attenuate dry PCM.
+  const loud=new AudioBuffer({sampleRate:sr,length:n,numberOfChannels:2});
+  for(let i=0;i<n;i++)for(let c=0;c<2;c++)
+   loud.getChannelData(c)[i]=.973*Math.sin(2*Math.PI*1780*i/sr);
+  const denseEvents=Array.from({length:48},(_,i)=>({
+   id:i+1,source:'adlibs',at:.67+i*.011,duration:.55,
+   path:i%2?'slide-right-rear':'slide-left-rear',level:.78
+  }));
+  const denseOut=await renderSaturn(loud,stems,denseEvents,{...saturnDefaults,enabled:true,wet:1,trail:1});
+  let densePeak=0,denseWet=0,dryStable=true;
+  for(let i=0;i<n;i++){
+   for(let c=0;c<2;c++){
+    const before=loud.getChannelData(c)[i],after=denseOut.getChannelData(c)[i];
+    densePeak=Math.max(densePeak,Math.abs(after));
+    denseWet+=Math.abs(after-before);
+    dryStable&&=Math.abs(before)<=.973001;
+   }
+  }
   const sampleUnchanged=master.getChannelData(0).every((v,i)=>v===orig[i]);
   const ignoredBeat=!scoutSaturn(master,stems,'stems',10).some(x=>x.source==='beat');
   const long=new AudioBuffer({sampleRate:sr,length:sr*17,numberOfChannels:1});
@@ -90,13 +109,14 @@ try{
    hrtfDuring:effects(binaural,.73,1.10),sampleUnchanged,
    pathHasRear:points.at(-1)[1]>0,validSettings:validSaturnSettings(saturnDefaults),
    invalidSettings:!validSaturnSettings({...saturnDefaults,wet:5}),invalidBeat:bad,
-   ignoredBeat,maxEvents:SATURN_MAX_EVENTS,scoutCount:dense.length,focusCount:focus.length,
+   ignoredBeat,maxEvents:SATURN_MAX_EVENTS,scoutCount:dense.length,focusCount:focus.length,densePeak,denseWet,dryStable,
    normalizedReferencePeak:Math.max(...master.getChannelData(0).slice(0,1000).map(x=>Math.abs(x)))};
  });
  assert(dsp.offIdentity&&dsp.zeroIdentity&&dsp.emptyIdentity,'SATURN OFF/zero/empty must return approved master by object identity');
  assert(dsp.sampleUnchanged,'SATURN must never mutate original PCM');
  assert(dsp.pathHasRear&&dsp.validSettings&&dsp.invalidSettings&&dsp.invalidBeat&&dsp.ignoredBeat,'route/settings/source invariants');
  assert.equal(dsp.maxEvents,48);
+ assert(dsp.densePeak<=.985002&&dsp.denseWet>.01&&dsp.dryStable,'48 overlapping events on a loud original must safely limit only wet without changing dry');
  assert(dsp.scoutCount>=15&&dsp.focusCount>=4,'dynamic scout should return substantially more candidates than V4.6 7');
  assert(dsp.first.delta<1e-7&&dsp.later.delta<1e-7,'no wet modification outside event and tail');
  assert(dsp.during.delta>.00002&&dsp.during.finite,'moving wet reflections must be real, finite audio');
