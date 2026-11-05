@@ -212,10 +212,12 @@ const rmsStereo=(buffer:AudioBuffer)=>{
  }
  return Math.sqrt(squares/(buffer.length*Math.min(2,buffer.numberOfChannels)));
 };
-export type SaturnReport={wetHrtfCorrection:number;limitedSamples:number;peak:number};
 /** The reference master is read-only. No global gain, EQ or compression of dry.
  * HRTF calibration changes only SATURN's wet reflections, bounded to +/- 4dB.
- * The last wet-only safety bound does not clip or lower dry, even near the ceiling.
+ *
+ * A 3ms look-ahead, 45ms release gain envelope is applied to WET ONLY:
+ * avoids sudden sample-by-sample wet clipping near loud kick/snare peaks.
+ * This cannot remove existing clipping in the reference master.
  */
 export async function renderSaturn(master:AudioBuffer,stems:OrbitStemMap,
  events:SaturnEvent[],settings:SaturnSettings):Promise<AudioBuffer>{
@@ -229,18 +231,42 @@ export async function renderSaturn(master:AudioBuffer,stems:OrbitStemMap,
   const a=rmsStereo(ref),b=rmsStereo(wet);
   if(a>1e-7&&b>1e-7)compensation=clamp(a/b,Math.pow(10,-4/20),Math.pow(10,4/20));
  }
- const ctx=new OfflineAudioContext(Math.min(2,master.numberOfChannels),master.length,master.sampleRate);
- const output=ctx.createBuffer(Math.min(2,master.numberOfChannels),master.length,master.sampleRate);
- const channels=output.numberOfChannels;
- for(let ch=0;ch<channels;ch++){
-  const dry=master.getChannelData(ch),w=wet.getChannelData(ch),dest=output.getChannelData(ch);
-  for(let i=0;i<dry.length;i++){
-   const addition=w[i]*compensation;
-   // Never lower or reprocess the approved original sample. Restrict ONLY wet signal.
-   const available=Math.max(0,.985-Math.abs(dry[i]));
-   const bounded=clamp(addition,-available,available);
-   dest[i]=dry[i]+bounded;
+ const channels=Math.min(2,master.numberOfChannels),length=master.length;
+ const output=new AudioBuffer({numberOfChannels:channels,length,sampleRate:master.sampleRate});
+ const dry=Array.from({length:channels},(_,ch)=>master.getChannelData(ch));
+ const moving=Array.from({length:channels},(_,ch)=>wet.getChannelData(ch));
+ const dest=Array.from({length:channels},(_,ch)=>output.getChannelData(ch));
+ const ceiling=.985,need=new Float32Array(length);
+ // The reference is never reduced. Work out how much WET can be added without
+ // increasing an already over-ceiling dry sample or creating a new over-ceiling peak.
+ for(let i=0;i<length;i++){
+  let allowed=1;
+  for(let ch=0;ch<channels;ch++){
+   const d=dry[ch][i],w=moving[ch][i]*compensation;
+   if(w>1e-12&&d+w>ceiling)allowed=Math.min(allowed,clamp((ceiling-d)/w,0,1));
+   if(w< -1e-12&&d+w< -ceiling)allowed=Math.min(allowed,clamp((-ceiling-d)/w,0,1));
   }
+  need[i]=allowed;
+ }
+ // Monotonic minimum deque: linear-time future 3ms attenuation lookahead,
+ // ahead of peaks that would otherwise abruptly cut off a moving reflection.
+ const lookahead=Math.max(1,Math.round(master.sampleRate*.003));
+ const indices=new Int32Array(length),future=new Float32Array(length);
+ let head=0,tail=0;
+ for(let i=length-1;i>=0;i--){
+  while(tail>head&&need[indices[tail-1]]>=need[i])tail--;
+  indices[tail++]=i;
+  while(tail>head&&indices[head]>i+lookahead)head++;
+  future[i]=need[indices[head]];
+ }
+ const release=Math.exp(-1/(master.sampleRate*.045));
+ let smooth=future[0]??1;
+ for(let i=0;i<length;i++){
+  // Instant reduction is advanced by lookahead. Recovery takes ~45ms.
+  smooth=future[i]<smooth?future[i]:smooth*release+future[i]*(1-release);
+  const g=Math.min(smooth,need[i]);
+  for(let ch=0;ch<channels;ch++)
+   dest[ch][i]=dry[ch][i]+moving[ch][i]*compensation*g;
  }
  return output;
 }
