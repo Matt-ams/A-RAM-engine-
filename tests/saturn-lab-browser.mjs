@@ -153,7 +153,7 @@ try{
  // Explicitly clone approved V4.6 events into SATURN, never move/change the original.
  await page.locator('input.seek').fill('2.15');
  const orbitPanel=page.getByRole('region',{name:'Rear Orbits Micro Events'});
- await orbitPanel.getByRole('button',{name:/\\+ DETAIL AT PLAYHEAD/}).click();
+ await orbitPanel.getByRole('button',{name:/DETAIL AT PLAYHEAD/}).click();
  const originalOrbitCount=await page.locator('.orbitMarker').count();
  assert(originalOrbitCount>=1,'V4.6 original event exists');
  await saturnRestored.getByRole('button',{name:/COPY V4.6 EVENTS/}).click();
