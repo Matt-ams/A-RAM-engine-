@@ -162,7 +162,7 @@ export default function SpatialFieldVisualizer({
             </g>;
           })}
         </svg>
-        <div className='asramFieldStats'><span>ROOM DEPTH <b>{Math.round((roomDepth.lead+roomDepth.beat)/2*100)}%</b></span><span>HALO <b>{haloMode?`${Math.round(haloAmount*100)}%`:'OFF'}</b></span><span>ACTIVE <b>{active.length}</b></span><span>TRAILS <b>{tails.length}</b></span></div>
+        <div className='asramFieldStats'><span>BEAT DEPTH <b>{Math.round(roomDepth.beat*100)}%</b></span><span>LEAD DEPTH <b>{Math.round(roomDepth.lead*100)}%</b></span><span>HALO <b>{haloMode?`${Math.round(haloAmount*100)}%`:'OFF'}</b></span><span>ACTIVE <b>{active.length}</b></span><span>TRAILS <b>{tails.length}</b></span></div>
         <p className='asramFieldDisclaimer'>Schematic keyframe positions, not a physical sound-field measurement. Trail persistence is an illustrative control preview; headphones and DSP determine the actual auditory image.</p>
       </div>
       <div className='asramFieldInspector'>
