@@ -85,14 +85,12 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
  const appendDirector=()=>{
   if(mode!=='stems'||!candidates.length)return;
   const proposals=scoutMusicalDirector(mix,stems,mode,18);
+  if(proposals.length)setSettings(s=>({...s,enabled:true,amount:Math.max(.52,s.amount),presence:s.presence??.72}));
   setEvents(prev=>{
    let id=Math.max(Date.now(),...prev.map(e=>e.id+1));
    const additions=proposals.filter(e=>prev.every(p=>Math.abs(p.at-e.at)>.65))
     .slice(0,Math.max(0,ORBIT_MAX_EVENTS-prev.length)).map(e=>({...e,id:id++}));
-   if(additions.length){
-    setSelectedId(additions[0].id);
-    setSettings(s=>({...s,enabled:true,amount:Math.max(.52,s.amount),presence:s.presence??.72}));
-   }
+   if(additions.length)setSelectedId(additions[0].id);
    return [...prev,...additions].sort((a,b)=>a.at-b.at);
   });
  };
