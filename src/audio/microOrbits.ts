@@ -243,9 +243,9 @@ export async function renderMicroOrbits(
   env.gain.linearRampToValueAtTime(0,t+d);
   fragment.connect(highpass).connect(lowpass).connect(env);
   // Energy deliberately bounded. The direct beat/lead and ROOM dry are untouched.
-  const presence=clamp(settings.presence??0,0,1);
-  // Legacy presets without presence retain their original wet amplitude.
-  // New expressive mode makes the moving copy meaningfully audible,
+  const presence=clamp(settings.presence??.72,0,1);
+  // Presence defaults to a clearly audible value in this isolated Lab,
+  // including for older V6 presets without the new field.
   // while limiting ONLY the added wet signal, never the dry mix.
   const level=clamp(settings.amount,0,1)*clamp(event.level,0,1)
    *(.19+.32*presence)*(event.source==='mix'?.40:event.source==='lead'?.84:1);
