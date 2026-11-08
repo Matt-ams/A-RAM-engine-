@@ -3,6 +3,7 @@
  * A small, filtered COPY of a short chosen fragment moves behind the listener.
  * No source separation, no generative AI, no Dolby Atmos certification.
  */
+export const ORBIT_MAX_EVENTS=48;
 export type OrbitSource='mix'|'lead'|'doubles'|'adlibs';
 export type OrbitPath='left-rear-right'|'right-rear-left'|'rear-drift-left'|'rear-drift-right'|'front-left-right'|'front-right-left'|'front-to-rear-left'|'front-to-rear-right'|'rear-to-front-left'|'rear-to-front-right'|'full-orbit-cw'|'full-orbit-ccw';
 export type OrbitBand='detail'|'voice';
@@ -81,6 +82,87 @@ export function scoutMicroOrbits(mix:AudioBuffer,stems:OrbitStemMap,mode:'stems'
   return {id:i+1,source:e.source,at:Math.round(e.time*100)/100,duration,path:(['front-to-rear-left','rear-drift-right','front-left-right','rear-to-front-right','left-rear-right','full-orbit-cw'] as OrbitPath[])[i%6],band:e.source==='mix'?'detail':e.source==='lead'?'voice':'detail',level:e.source==='mix'?.62:.8};
  });
 }
+/** VOCAL-PHRASE SCOUT V0.1 (TT4 LAB)
+ * Finds audible vocal phrases by their envelope/onsets rather than simply
+ * ranking the brightest transients. No speech recognition: exact words
+ * such as "A$RAM ON THE TRACK" must still be placed by ear at the playhead.
+ * Reads only original vocal stems; NEVER selects the BEAT stem.
+ */
+export function scoutVocalPhrases(mix:AudioBuffer,stems:OrbitStemMap,mode:'stems'|'stereo',count=12,focusTime?:number):OrbitEvent[]{
+ if(!mix||mix.duration<.8)return [];
+ const candidates=orbitEventSources(stems,mode);
+ // Stereo-only scouting cannot reliably identify voice, but it can make
+ // low-confidence activity suggestions without claiming word recognition.
+ if(!candidates.length)candidates.push({source:'mix',buffer:mix});
+ const limit=Math.max(1,Math.min(24,Math.trunc(count)||12));
+ const hits:Array<{source:OrbitSource;time:number;duration:number;score:number}>=[];
+ const focus=Number.isFinite(focusTime);
+ for(const {source,buffer} of candidates){
+  const sr=buffer.sampleRate,hop=.065,windowSec=.085;
+  const first=focus?Math.max(0,focusTime!-4):0;
+  const last=Math.min(mix.duration,buffer.duration,focus?focusTime!+4:mix.duration);
+  if(last-first<.2)continue;
+  const x=buffer.getChannelData(0),energy:number[]=[];
+  for(let t=first;t<last;t+=hop){
+   const start=Math.floor(t*sr),end=Math.min(buffer.length,start+Math.floor(windowSec*sr));
+   const stride=Math.max(1,Math.floor((end-start)/240));
+   let total=0,n=0;
+   for(let k=start;k<end;k+=stride){const sample=x[k];total+=sample*sample;n++}
+   energy.push(Math.sqrt(total/Math.max(n,1)));
+  }
+  if(energy.length<4)continue;
+  const sorted=[...energy].sort((a,b)=>a-b);
+  const noise=sorted[Math.floor(sorted.length*.2)]||0,high=sorted[Math.floor(sorted.length*.94)]||0;
+  const threshold=Math.max(.0015,noise*1.9,high*.14);
+  // Join short intra-word pauses, but do not convert an entire verse into
+  // one giant event. Maximum event length remains 2.4 seconds.
+  let start=-1,gap=0,peak=0,integral=0,samples=0;
+  const finish=(endFrame:number)=>{
+   if(start<0)return;
+   const onset=first+start*hop;
+   const end=first+endFrame*hop;
+   const length=end-onset;
+   if(length>=.19 && peak>threshold*1.07){
+    const prev=Math.max(noise,energy[Math.max(0,start-2)]||0,.001);
+    const rise=Math.min(4,peak/prev);
+    const duration=Math.min(2.4,Math.max(.35,length+.14));
+    // Require an audible change AND useful phrase length; do not just
+    // pick the loudest beat or clip in the track.
+    const preference=source==='adlibs'?1.65:source==='doubles'?1.35:source==='lead'?1.0:.38;
+    const score=preference*(.6+.4*Math.log1p(rise))*(.5+.5*Math.min(1,length/.75))
+      *Math.log1p(100*Math.max(peak,integral/Math.max(samples,1)));
+    hits.push({source,time:Math.max(0,onset-.055),duration,score});
+   }
+   start=-1;gap=0;peak=0;integral=0;samples=0;
+  };
+  for(let i=0;i<energy.length;i++){
+   const e=energy[i],active=e>=threshold;
+   if(active){if(start<0)start=i;gap=0;peak=Math.max(peak,e);integral+=e;samples++}
+   else if(start>=0){gap++;if(gap>=4)finish(i-gap+1)}
+  }
+  finish(energy.length);
+ }
+ if(!hits.length)return [];
+ hits.sort((a,b)=>b.score-a.score||a.time-b.time);
+ // Diverse sections rather than filling every slot from a single chorus.
+ const chosen:typeof hits=[],spacing=focus?.42:Math.max(.75,Math.min(3.8,mix.duration/(limit*4)));
+ const bins=new Set<number>(),binSize=focus?1.15:Math.max(2,mix.duration/Math.max(8,limit));
+ for(const pass of [0,1]){
+  for(const hit of hits){
+   const bin=Math.floor(hit.time/binSize);
+   if(pass===0&&bins.has(bin))continue;
+   if(chosen.some(x=>Math.abs(x.time-hit.time)<spacing))continue;
+   chosen.push(hit);bins.add(bin);
+   if(chosen.length>=limit)break;
+  }
+  if(chosen.length>=limit)break;
+ }
+ chosen.sort((a,b)=>a.time-b.time);
+ const suggestedPaths:OrbitPath[]=['left-rear-right','front-to-rear-left','rear-drift-right','front-left-right','rear-to-front-right','right-rear-left'];
+ return chosen.map((h,i)=>({id:i+1,source:h.source,at:Math.round(h.time*100)/100,
+  duration:Math.round(h.duration*100)/100,path:suggestedPaths[i%suggestedPaths.length],
+  band:h.source==='mix'?'detail':'voice',level:h.source==='mix'?.55:.82}));
+}
 /** The WebAudio listener faces negative Z. Positive Z is BEHIND the ears.
  * Keyframes intentionally describe actual front/rear motion, not just pan.
  * All trajectories are local wet reflections and never reposition original stems.
@@ -135,7 +217,7 @@ export async function renderMicroOrbits(
 ):Promise<AudioBuffer>{
  // EXACT identity path: OFF does not render, copy or modify any PCM.
  if(!settings.enabled||settings.amount===0||!events.length)return original;
- const included=events.filter(e=>validOrbitEvent(e)&&e.at<original.duration-.12).slice(0,12);
+ const included=events.filter(e=>validOrbitEvent(e)&&e.at<original.duration-.12).slice(0,ORBIT_MAX_EVENTS);
  if(!included.length)return original;
  const ctx=new OfflineAudioContext(Math.min(2,Math.max(1,original.numberOfChannels)),original.length,original.sampleRate);
  const dry=ctx.createBufferSource();dry.buffer=original;dry.connect(ctx.destination);dry.start(0);
