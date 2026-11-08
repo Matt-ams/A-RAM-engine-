@@ -8,10 +8,10 @@ export type OrbitSource='mix'|'lead'|'doubles'|'adlibs';
 export type OrbitPath='left-rear-right'|'right-rear-left'|'rear-drift-left'|'rear-drift-right'|'front-left-right'|'front-right-left'|'front-to-rear-left'|'front-to-rear-right'|'rear-to-front-left'|'rear-to-front-right'|'full-orbit-cw'|'full-orbit-ccw';
 export type OrbitBand='detail'|'voice';
 export type OrbitEvent={id:number;source:OrbitSource;at:number;duration:number;path:OrbitPath;band:OrbitBand;level:number};
-export type OrbitSettings={enabled:boolean;amount:number;rear:number;hrtf:boolean;motion?:number;trail?:number;voicePriority?:number};
+export type OrbitSettings={enabled:boolean;amount:number;rear:number;hrtf:boolean;motion?:number;trail?:number;voicePriority?:number;presence?:number};
 export type OrbitStem={buffer:AudioBuffer|null;mute:boolean;solo:boolean};
 export type OrbitStemMap=Partial<Record<Exclude<OrbitSource,'mix'>,OrbitStem>>;
-export const orbitDefaults:OrbitSettings={enabled:false,amount:.4,rear:.78,hrtf:true,motion:.75,trail:.22,voicePriority:.72};
+export const orbitDefaults:OrbitSettings={enabled:false,amount:.52,rear:.78,hrtf:false,motion:.82,trail:.25,voicePriority:.58,presence:.72};
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
 const paths:OrbitPath[]=['left-rear-right','right-rear-left','rear-drift-left','rear-drift-right','front-left-right','front-right-left','front-to-rear-left','front-to-rear-right','rear-to-front-left','rear-to-front-right','full-orbit-cw','full-orbit-ccw'];
 const bands:OrbitBand[]=['detail','voice'];
@@ -24,7 +24,7 @@ export function validOrbitEvent(x:unknown):x is OrbitEvent{
 export function validOrbitSettings(x:unknown):x is OrbitSettings{
  if(!x||typeof x!=='object')return false;
  const s=x as Partial<OrbitSettings>;
- return typeof s.enabled==='boolean'&&typeof s.hrtf==='boolean'&&Number.isFinite(s.amount)&&s.amount!>=0&&s.amount!<=1&&Number.isFinite(s.rear)&&s.rear!>=0&&s.rear!<=1&&(s.motion===undefined||Number.isFinite(s.motion)&&s.motion>=0&&s.motion<=1)&&(s.trail===undefined||Number.isFinite(s.trail)&&s.trail>=0&&s.trail<=1)&&(s.voicePriority===undefined||Number.isFinite(s.voicePriority)&&s.voicePriority>=0&&s.voicePriority<=1);
+ return typeof s.enabled==='boolean'&&typeof s.hrtf==='boolean'&&Number.isFinite(s.amount)&&s.amount!>=0&&s.amount!<=1&&Number.isFinite(s.rear)&&s.rear!>=0&&s.rear!<=1&&(s.motion===undefined||Number.isFinite(s.motion)&&s.motion>=0&&s.motion<=1)&&(s.trail===undefined||Number.isFinite(s.trail)&&s.trail>=0&&s.trail<=1)&&(s.voicePriority===undefined||Number.isFinite(s.voicePriority)&&s.voicePriority>=0&&s.voicePriority<=1)&&(s.presence===undefined||Number.isFinite(s.presence)&&s.presence>=0&&s.presence<=1);
 }
 export function orbitEventSources(stems:OrbitStemMap, mode:'stems'|'stereo'):{source:OrbitSource;buffer:AudioBuffer}[]{
  const anySolo=Object.values(stems).some(x=>x?.buffer&&x.solo);
@@ -219,8 +219,10 @@ export async function renderMicroOrbits(
  if(!settings.enabled||settings.amount===0||!events.length)return original;
  const included=events.filter(e=>validOrbitEvent(e)&&e.at<original.duration-.12).slice(0,ORBIT_MAX_EVENTS);
  if(!included.length)return original;
- const ctx=new OfflineAudioContext(Math.min(2,Math.max(1,original.numberOfChannels)),original.length,original.sampleRate);
- const dry=ctx.createBufferSource();dry.buffer=original;dry.connect(ctx.destination);dry.start(0);
+ // Render the moving reflections ALONE. We blend them with the untouched
+ // original only after an independent stereo-linked headroom check.
+ const channels=Math.min(2,Math.max(1,original.numberOfChannels));
+ const ctx=new OfflineAudioContext(channels,original.length,original.sampleRate);
  const anySolo=Object.values(stems).some(st=>st?.buffer&&st.solo);
  for(const event of included){
   const st=event.source==='mix'?null:stems[event.source];
@@ -241,7 +243,12 @@ export async function renderMicroOrbits(
   env.gain.linearRampToValueAtTime(0,t+d);
   fragment.connect(highpass).connect(lowpass).connect(env);
   // Energy deliberately bounded. The direct beat/lead and ROOM dry are untouched.
-  const level=clamp(settings.amount,0,1)*clamp(event.level,0,1)*.19*(event.source==='mix'?.46:event.source==='lead'?.80:1);
+  const presence=clamp(settings.presence??.72,0,1);
+  // Presence defaults to a clearly audible value in this isolated Lab,
+  // including for older V6 presets without the new field.
+  // while limiting ONLY the added wet signal, never the dry mix.
+  const level=clamp(settings.amount,0,1)*clamp(event.level,0,1)
+   *(.19+.32*presence)*(event.source==='mix'?.40:event.source==='lead'?.84:1);
   const coords=orbitPathPositions(event.path,settings.rear,settings.motion??orbitDefaults.motion??.75);
   const rear=ctx.createDelay(.18);rear.delayTime.value=.028+settings.rear*.032;
   const gain=ctx.createGain();gain.gain.value=level;
@@ -263,16 +270,16 @@ export async function renderMicroOrbits(
   if(settings.hrtf){
    const panner=ctx.createPanner();panner.panningModel='HRTF';panner.distanceModel='inverse';
    panner.refDistance=1;panner.maxDistance=20;panner.rolloffFactor=0;panner.coneInnerAngle=360;
-   motion(panner.positionX,coords.map(c=>c[0]),t,d);
-   motion(panner.positionZ,coords.map(c=>c[1]),t,d);
+   motion(panner.positionX,coords.map(c=>c[0]),t+rear.delayTime.value,d);
+   motion(panner.positionZ,coords.map(c=>c[1]),t+rear.delayTime.value,d);
    panner.positionY.value=0;
    const headGain=ctx.createGain();headGain.gain.value=.97;
    gain.connect(panner).connect(headGain).connect(ctx.destination);
   }
   // A quiet side cue remains when HRTF feels muffled or browser rear cues are weak.
   const side=ctx.createStereoPanner();
-  motion(side.pan,coords.map(c=>clamp(c[0]/2.7,-.95,.95)),t,d);
-  const sideGain=ctx.createGain();sideGain.gain.value=settings.hrtf?.19:.85;
+  motion(side.pan,coords.map(c=>clamp(c[0]/2.25,-.96,.96)),t+rear.delayTime.value,d);
+  const sideGain=ctx.createGain();sideGain.gain.value=settings.hrtf?.19:1;
   gain.connect(side).connect(sideGain).connect(ctx.destination);
   // Rear persistence, bounded and independent from the dry signal.
   const trail=clamp(settings.trail??orbitDefaults.trail??.22,0,1);
@@ -285,5 +292,40 @@ export async function renderMicroOrbits(
   }
   fragment.start(t,t,d);fragment.stop(t+d);
  }
- return await ctx.startRendering();
+ const wet=await ctx.startRendering();
+ // Existing dry PCM is kept sample-for-sample. Prevent the added reflection
+ // from creating new overs while preserving perceived motion between transients.
+ const output=new AudioBuffer({numberOfChannels:channels,length:original.length,sampleRate:original.sampleRate});
+ const dry=Array.from({length:channels},(_,ch)=>original.getChannelData(ch));
+ const moving=Array.from({length:channels},(_,ch)=>wet.getChannelData(ch));
+ const dest=Array.from({length:channels},(_,ch)=>output.getChannelData(ch));
+ const ceiling=.985,need=new Float32Array(original.length);
+ for(let i=0;i<original.length;i++){
+  let allowed=1;
+  for(let c=0;c<channels;c++){
+   const d=dry[c][i],w=moving[c][i];
+   if(w>1e-12 && d+w>ceiling)allowed=Math.min(allowed,clamp((ceiling-d)/w,0,1));
+   if(w< -1e-12 && d+w< -ceiling)allowed=Math.min(allowed,clamp((-ceiling-d)/w,0,1));
+  }
+  need[i]=allowed;
+ }
+ // 2ms anticipatory attenuation and 35ms release on wet only.
+ const lookahead=Math.max(1,Math.round(original.sampleRate*.002));
+ const q=new Int32Array(original.length);
+ let head=0,tail=0;
+ const future=new Float32Array(original.length);
+ for(let i=original.length-1;i>=0;i--){
+  while(tail>head&&need[q[tail-1]]>=need[i])tail--;
+  q[tail++]=i;
+  while(tail>head&&q[head]>i+lookahead)head++;
+  future[i]=need[q[head]];
+ }
+ const release=Math.exp(-1/(original.sampleRate*.035));
+ let g=future[0]??1;
+ for(let i=0;i<original.length;i++){
+  g=future[i]<g?future[i]:release*g+(1-release)*future[i];
+  const safe=Math.min(g,need[i]);
+  for(let c=0;c<channels;c++)dest[c][i]=dry[c][i]+moving[c][i]*safe;
+ }
+ return output;
 }

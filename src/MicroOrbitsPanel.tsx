@@ -1,4 +1,5 @@
 import {useMemo,useState,type Dispatch,type SetStateAction} from 'react';
+import {scoutMusicalDirector} from './audio/musicalDirector';
 import {
  orbitEventSources,scoutMicroOrbits,scoutVocalPhrases,ORBIT_MAX_EVENTS,orbitPathPositions,type OrbitEvent,type OrbitSettings,
  type OrbitSource,type OrbitPath,type OrbitBand,type OrbitStemMap
@@ -70,6 +71,29 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
    return additions.length?[...prev,...additions].sort((a,b)=>a.at-b.at):prev;
   });
  };
+ const recomposeWholeSong=()=>{
+  if(mode!=='stems'||!candidates.length)return;
+  const suggestions=scoutMusicalDirector(mix,stems,mode,Math.max(8,Math.min(24,Math.round(mix.duration/10))));
+  // Explicit RECOMPOSE replaces previously suggested/manual event positions.
+  // It never touches the audio itself. User can save preset first.
+  let id=Math.max(Date.now(),...events.map(e=>e.id+1));
+  const scene=suggestions.map(e=>({...e,id:id++}));
+  setEvents(scene);
+  setSelectedId(scene[0]?.id??null);
+  if(scene.length)setSettings(s=>({...s,enabled:true,amount:Math.max(.52,s.amount),presence:s.presence??.72}));
+ };
+ const appendDirector=()=>{
+  if(mode!=='stems'||!candidates.length)return;
+  const proposals=scoutMusicalDirector(mix,stems,mode,18);
+  if(proposals.length)setSettings(s=>({...s,enabled:true,amount:Math.max(.52,s.amount),presence:s.presence??.72}));
+  setEvents(prev=>{
+   let id=Math.max(Date.now(),...prev.map(e=>e.id+1));
+   const additions=proposals.filter(e=>prev.every(p=>Math.abs(p.at-e.at)>.65))
+    .slice(0,Math.max(0,ORBIT_MAX_EVENTS-prev.length)).map(e=>({...e,id:id++}));
+   if(additions.length)setSelectedId(additions[0].id);
+   return [...prev,...additions].sort((a,b)=>a.at-b.at);
+  });
+ };
  const addTagSweep=()=>{
   setEvents(prev=>{
    if(prev.length>=ORBIT_MAX_EVENTS)return prev;
@@ -94,7 +118,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
  const motionPoint=screenPoint([points[pointIndex][0]*(1-blend)+points[pointIndex+1][0]*blend,points[pointIndex][1]*(1-blend)+points[pointIndex+1][1]*blend]);
  return <section className='orbitLab' aria-label='Rear Orbits Micro Events'>
   <header className='orbitHead'>
-   <div><p className='orbitEyebrow'>OPTIONAL POST-ROOM EXPERIMENT · WET ONLY</p><h2>REAR ORBITS <span>FRONT / REAR · SENSORIAL MICRO-SWEEPS</span></h2><p>Animate short vocal fragments across the front, around an ear, and behind the head. The main BEAT, direct LEAD, and existing ROOM stay anchored.</p></div>
+   <div><p className='orbitEyebrow'>EXPERIMENTAL WHOLE-SONG MOTION · WET ONLY</p><h2>REAR ORBITS <span>MUSICAL SPATIAL DIRECTOR</span></h2><p>Arrange audible, section-aware motion through the whole song: vocal entrances, adlib responses, changes in energy and meaningful silences. Dry BEAT, main LEAD and ROOM stay anchored.</p></div>
    <button className={settings.enabled?'orbitToggle active':'orbitToggle'} aria-pressed={settings.enabled} disabled={roomPending&&!settings.enabled} onClick={()=>updateSetting('enabled',!settings.enabled)}>{settings.enabled?'ORBIT ENGINE · ON':'ORBIT ENGINE · OFF'}</button>
   </header>
   <div className='orbitBody'>
@@ -127,6 +151,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
      <label>REAR DEPTH <b>{Math.round(settings.rear*100)}%</b><input aria-label='Orbit rear depth' type='range' min='0' max='100' step='5' value={settings.rear*100} onChange={e=>updateSetting('rear',Number(e.target.value)/100)}/></label>
     </div>
     <div className='orbitControls'>
+     <label>MOTION PRESENCE <b>{Math.round((settings.presence??.72)*100)}%</b><input aria-label='Orbit motion presence' type='range' min='0' max='100' step='5' value={(settings.presence??.72)*100} onChange={e=>updateSetting('presence',Number(e.target.value)/100)}/></label>
      <label>TRAJECTORY SPAN <b>{Math.round((settings.motion??.75)*100)}%</b><input aria-label='Orbit trajectory span' type='range' min='0' max='100' step='5' value={(settings.motion??.75)*100} onChange={e=>updateSetting('motion',Number(e.target.value)/100)}/></label>
      <label>REAR PERSISTENCE <b>{Math.round((settings.trail??.22)*100)}%</b><input aria-label='Orbit rear persistence' type='range' min='0' max='100' step='5' value={(settings.trail??.22)*100} onChange={e=>updateSetting('trail',Number(e.target.value)/100)}/></label>
     </div>
@@ -135,18 +160,20 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
       <small>{mode==='stems'&&stems.lead?.buffer&&!stems.lead.mute?'LEAD detected · mobile reflections automatically yield while your main vocal is singing.':'Requires an active LEAD stem for automatic vocal priority; no separation of voices from stereo mixes.'} Main LEAD and BEAT are never ducked.</small>
     </div>
     <button className={settings.hrtf?'orbitHrtf on':'orbitHrtf'} aria-pressed={settings.hrtf} onClick={()=>updateSetting('hrtf',!settings.hrtf)}>3D HRTF · WET ONLY {settings.hrtf?'ON':'OFF'}</button>
-    <p className='orbitDetailNote'>WET-only fragments, gain-limited. Turn 3D HRTF ON for front/back cues; OFF reduces to left/right stereo. If Safari sounds boxy, compare both. This is NOT discrete Atmos.</p>
+    <p className='orbitDetailNote'>MOTION PRESENCE increases only the moving reflection, with bounded headroom protection. 3D HRTF OFF keeps strong left/right stereo trajectories; ON is experimental for front/rear. New presets start in stereo mode. This is NOT discrete Atmos.</p>
     {roomPending&&<p className='orbitPending' role='status'>STEMS CHANGED OR ROOM SETTINGS PENDING · REBUILD ROOM BUS BEFORE USING SMART SCOUT OR RE-ENABLING ORBITS.</p>}
     <div className='orbitActions'>
+     <button onClick={recomposeWholeSong} disabled={roomPending||mode!=='stems'||!candidates.length||mix.duration<1} title='Replace all ORBIT events with a new section-aware whole-song proposal; save preset first if you want to keep existing manual positions.'>MUSICAL DIRECTOR · RECOMPOSE WHOLE SONG</button>
+     <button onClick={appendDirector} disabled={roomPending||mode!=='stems'||!candidates.length||events.length>=ORBIT_MAX_EVENTS||mix.duration<1}>DIRECTOR · ADD SONG MOMENTS</button>
      <button onClick={()=>scan(true,'voice')} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>SCOUT VOCAL PHRASES · ±4s</button>
      <button onClick={()=>scan(false,'voice')} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>SCOUT VOCAL PHRASES · FULL TRACK</button>
      <button onClick={()=>scan(true,'details')} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>SCOUT TRANSIENT DETAILS · ±4s</button>
-     <button onClick={addTagSweep} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>A$RAM TAG SWEEP · L EAR → R EAR ({clock(playhead)})</button>
+     <button onClick={addTagSweep} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>EAR-TO-EAR MANUAL ACCENT ({clock(playhead)})</button>
      <button onClick={addManual} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>+ DETAIL AT PLAYHEAD ({clock(playhead)})</button>
      <button onClick={()=>{setEvents([]);setSelectedId(null)}} disabled={!events.length}>CLEAR</button>
     </div>
-    <small className='orbitDetailNote'>SCOUT adds suggestions without deleting manually placed events. A$RAM TAG SWEEP is placed exactly at the current playhead; adjust START and DURATION to match the actual vocal phrase.</small>
-    <small className='orbitDetailNote'>VOICE SCOUT V0.1 measures vocal STEM activity/envelope and separates musical phrases instead of ranking only transients. It does NOT recognize words or know when "A$RAM ON THE TRACK" is sung. Select that phrase by ear and press A$RAM TAG SWEEP. Never selects BEAT as an ORBIT source. Stereo-only MIX suggestions have low confidence. Up to 48 events are experimental: check render performance and A/B quality.</small>
+    <small className='orbitDetailNote'>MUSICAL DIRECTOR · RECOMPOSE replaces the ORBIT scene; SAVE SETTINGS beforehand if you want to preserve manual edits. ADD SONG MOMENTS preserves existing events. EAR-TO-EAR ACCENT is a manual option, not the director's target.</small>
+    <small className='orbitDetailNote'>MUSICAL DIRECTOR V0.1 uses LEAD / DOUBLES / ADLIBS envelope onsets and local structural contrast to distribute meaningful changes through the track. It cannot recognize lyrics, isolate individual instruments from a stereo file or assess emotion. It never moves the original BEAT. A vocal stem is required for whole-song direction. Up to 48 wet events remain available for editing; the director deliberately creates fewer.</small>
    </div>
   </div>
   <div className='orbitTimeline'>
