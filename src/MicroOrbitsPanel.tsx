@@ -1,6 +1,6 @@
 import {useMemo,useState,type Dispatch,type SetStateAction} from 'react';
 import {
- orbitEventSources,scoutMicroOrbits,orbitPathPositions,type OrbitEvent,type OrbitSettings,
+ orbitEventSources,scoutMicroOrbits,scoutVocalPhrases,ORBIT_MAX_EVENTS,orbitPathPositions,type OrbitEvent,type OrbitSettings,
  type OrbitSource,type OrbitPath,type OrbitBand,type OrbitStemMap
 } from './audio/microOrbits';
 
@@ -48,7 +48,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
  const updateSetting=<K extends keyof OrbitSettings>(k:K,v:OrbitSettings[K])=>setSettings(s=>({...s,[k]:v}));
  const updateEvent=(p:Partial<OrbitEvent>)=>{if(!selected)return;setEvents(es=>es.map(e=>e.id===selected.id?{...e,...p}:e))};
  const addManual=()=>{setEvents(prev=>{
-  if(prev.length>=12)return prev;
+  if(prev.length>=ORBIT_MAX_EVENTS)return prev;
   const at=Math.round(clamp(playhead,0,Math.max(0,mix.duration-.8))*100)/100;
   const source=availableSources[0]??'mix';
   const duration=source==='mix'?.45:source==='lead'?.85:.9;
@@ -56,14 +56,32 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
   setSelectedId(id);
   const event:OrbitEvent={id,source,at,duration,path:'front-to-rear-left',band:source==='lead'?'voice':'detail',level:.75};return [...prev,event].sort((a,b)=>a.at-b.at);
  })};
- const scan=(around=false)=>{
-  const proposals=scoutMicroOrbits(mix,stems,mode,around?4:7,around?playhead:undefined);
-  // Exploring a second break must NOT erase a previously positioned orbit scene.
-  let nextId=Math.max(Date.now(),...events.map(e=>e.id+1));
-  const additions=proposals.filter(candidate=>events.every(e=>Math.abs(e.at-candidate.at)>.35||e.source!==candidate.source))
-    .slice(0,Math.max(0,12-events.length))
-    .map(p=>({...p,id:nextId++}));
-  if(additions.length){setEvents(prev=>[...prev,...additions].sort((a,b)=>a.at-b.at));setSelectedId(additions[0].id)}
+ const scan=(around=false,kind:'voice'|'details'='voice')=>{
+  const proposals=kind==='voice'
+    ?scoutVocalPhrases(mix,stems,mode,around?7:18,around?playhead:undefined)
+    :scoutMicroOrbits(mix,stems,mode,around?4:7,around?playhead:undefined);
+  // Only add genuinely new suggestions; never erase approved manual events.
+  setEvents(prev=>{
+   let nextId=Math.max(Date.now(),...prev.map(e=>e.id+1));
+   const additions=proposals.filter(candidate=>prev.every(e=>Math.abs(e.at-candidate.at)>.4||e.source!==candidate.source))
+     .slice(0,Math.max(0,ORBIT_MAX_EVENTS-prev.length))
+     .map(p=>({...p,id:nextId++}));
+   if(additions.length)setSelectedId(additions[0].id);
+   return additions.length?[...prev,...additions].sort((a,b)=>a.at-b.at):prev;
+  });
+ };
+ const addTagSweep=()=>{
+  setEvents(prev=>{
+   if(prev.length>=ORBIT_MAX_EVENTS)return prev;
+   const source:OrbitSource=availableSources.includes('lead')?'lead':availableSources.includes('adlibs')?'adlibs':availableSources.includes('doubles')?'doubles':'mix';
+   const id=Math.max(Date.now(),...prev.map(e=>e.id+1));
+   const at=Math.round(clamp(playhead,0,Math.max(0,mix.duration-2.2))*100)/100;
+   // This is a deliberate MANUAL placement, NOT a claim of speech recognition.
+   const event:OrbitEvent={id,source,at,duration:Math.min(2.2,mix.duration-at),
+     path:'left-rear-right',band:'voice',level:1};
+   setSelectedId(id);
+   return [...prev,event].sort((a,b)=>a.at-b.at);
+  });
  };
  const points=orbitPathPositions(selected?.path??'left-rear-right',settings.rear,settings.motion??.75);
  const rearPath=svgPath(points);
@@ -120,17 +138,19 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
     <p className='orbitDetailNote'>WET-only fragments, gain-limited. Turn 3D HRTF ON for front/back cues; OFF reduces to left/right stereo. If Safari sounds boxy, compare both. This is NOT discrete Atmos.</p>
     {roomPending&&<p className='orbitPending' role='status'>STEMS CHANGED OR ROOM SETTINGS PENDING · REBUILD ROOM BUS BEFORE USING SMART SCOUT OR RE-ENABLING ORBITS.</p>}
     <div className='orbitActions'>
-     <button onClick={()=>scan(true)} disabled={roomPending||mix.duration<.8}>SCOUT THIS BREAK · ±4s</button>
-     <button onClick={()=>scan(false)} disabled={roomPending||mix.duration<.8}>SCOUT WHOLE TRACK</button>
-     <button onClick={addManual} disabled={roomPending||events.length>=12||mix.duration<.8}>+ DETAIL AT PLAYHEAD ({clock(playhead)})</button>
+     <button onClick={()=>scan(true,'voice')} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>SCOUT VOCAL PHRASES · ±4s</button>
+     <button onClick={()=>scan(false,'voice')} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>SCOUT VOCAL PHRASES · FULL TRACK</button>
+     <button onClick={()=>scan(true,'details')} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>SCOUT TRANSIENT DETAILS · ±4s</button>
+     <button onClick={addTagSweep} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>A$RAM TAG SWEEP · L EAR → R EAR ({clock(playhead)})</button>
+     <button onClick={addManual} disabled={roomPending||events.length>=ORBIT_MAX_EVENTS||mix.duration<.8}>+ DETAIL AT PLAYHEAD ({clock(playhead)})</button>
      <button onClick={()=>{setEvents([]);setSelectedId(null)}} disabled={!events.length}>CLEAR</button>
     </div>
-    <small className='orbitDetailNote'>SCOUT ADDS suggested moments without deleting earlier events. CLEAR is the only bulk scene reset.</small>
-    <small className='orbitDetailNote'>LOCAL SIGNAL HEURISTIC · prefers AD-LIBS / DOUBLES, then short LEAD snippets. Never selects the BEAT stem. In stereo mode, spectral filtering is approximate: voices and instruments cannot be separated reliably.</small>
+    <small className='orbitDetailNote'>SCOUT adds suggestions without deleting manually placed events. A$RAM TAG SWEEP is placed exactly at the current playhead; adjust START and DURATION to match the actual vocal phrase.</small>
+    <small className='orbitDetailNote'>VOICE SCOUT V0.1 measures vocal STEM activity/envelope and separates musical phrases instead of ranking only transients. It does NOT recognize words or know when "A$RAM ON THE TRACK" is sung. Select that phrase by ear and press A$RAM TAG SWEEP. Never selects BEAT as an ORBIT source. Stereo-only MIX suggestions have low confidence. Up to 48 events are experimental: check render performance and A/B quality.</small>
    </div>
   </div>
   <div className='orbitTimeline'>
-    <div className='orbitTimelineTitle'><b>ORBIT SYNC TIMELINE · SAME CLOCK AS MAIN PLAYER</b><span>{events.length} / 12 events</span></div>
+    <div className='orbitTimelineTitle'><b>ORBIT SYNC TIMELINE · SAME CLOCK AS MAIN PLAYER</b><span>{events.length} / {ORBIT_MAX_EVENTS} events</span></div>
     <div className='orbitMiniTransport'>
       <button aria-label={playing?'Pause from Orbit timeline':'Play from Orbit timeline'} onClick={onTogglePlay}>{playing?'Ⅱ  PAUSE':'▶  PLAY'}</button>
       <b className='orbitTimecode' aria-label='Orbit current time'>{clock(playhead)} / {clock(mix.duration)}</b>
