@@ -80,6 +80,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
   const scene=suggestions.map(e=>({...e,id:id++}));
   setEvents(scene);
   setSelectedId(scene[0]?.id??null);
+  if(scene.length)setSettings(s=>({...s,enabled:true,amount:Math.max(.52,s.amount),presence:s.presence??.72}));
  };
  const appendDirector=()=>{
   if(mode!=='stems'||!candidates.length)return;
@@ -88,7 +89,10 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
    let id=Math.max(Date.now(),...prev.map(e=>e.id+1));
    const additions=proposals.filter(e=>prev.every(p=>Math.abs(p.at-e.at)>.65))
     .slice(0,Math.max(0,ORBIT_MAX_EVENTS-prev.length)).map(e=>({...e,id:id++}));
-   if(additions.length)setSelectedId(additions[0].id);
+   if(additions.length){
+    setSelectedId(additions[0].id);
+    setSettings(s=>({...s,enabled:true,amount:Math.max(.52,s.amount),presence:s.presence??.72}));
+   }
    return [...prev,...additions].sort((a,b)=>a.at-b.at);
   });
  };
@@ -149,7 +153,7 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
      <label>REAR DEPTH <b>{Math.round(settings.rear*100)}%</b><input aria-label='Orbit rear depth' type='range' min='0' max='100' step='5' value={settings.rear*100} onChange={e=>updateSetting('rear',Number(e.target.value)/100)}/></label>
     </div>
     <div className='orbitControls'>
-     <label>MOTION PRESENCE <b>{Math.round((settings.presence??0)*100)}%</b><input aria-label='Orbit motion presence' type='range' min='0' max='100' step='5' value={(settings.presence??0)*100} onChange={e=>updateSetting('presence',Number(e.target.value)/100)}/></label>
+     <label>MOTION PRESENCE <b>{Math.round((settings.presence??.72)*100)}%</b><input aria-label='Orbit motion presence' type='range' min='0' max='100' step='5' value={(settings.presence??.72)*100} onChange={e=>updateSetting('presence',Number(e.target.value)/100)}/></label>
      <label>TRAJECTORY SPAN <b>{Math.round((settings.motion??.75)*100)}%</b><input aria-label='Orbit trajectory span' type='range' min='0' max='100' step='5' value={(settings.motion??.75)*100} onChange={e=>updateSetting('motion',Number(e.target.value)/100)}/></label>
      <label>REAR PERSISTENCE <b>{Math.round((settings.trail??.22)*100)}%</b><input aria-label='Orbit rear persistence' type='range' min='0' max='100' step='5' value={(settings.trail??.22)*100} onChange={e=>updateSetting('trail',Number(e.target.value)/100)}/></label>
     </div>
