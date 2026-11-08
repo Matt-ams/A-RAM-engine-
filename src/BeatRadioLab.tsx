@@ -39,7 +39,7 @@ export default function BeatRadioLab({beat}:Props){
  const [reduction,setReduction]=useState(.2),[preserve,setPreserve]=useState(.9);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[preview,setPreview]=useState<Preview|null>(null);
  useEffect(()=>{setPreview(null);setError('')},[beat]);
- useEffect(()=>()=>{if(preview)for(const url of Object.values(preview).filter(x=>typeof x==='string'&&x.startsWith('blob:')))URL.revokeObjectURL(url)},[preview]);
+ useEffect(()=>()=>{if(preview)for(const key of ['original','clean','removed','export'] as const)URL.revokeObjectURL(preview[key])},[preview]);
  const prepare=async()=>{
   if(!beat||busy)return;
   if(end-start<.1||start<0||end>beat.duration){setError('Choose at least 0.1 second of genuine noise-only audio inside the BEAT stem.');return}
