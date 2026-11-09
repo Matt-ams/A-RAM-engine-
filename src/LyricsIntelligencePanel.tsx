@@ -186,6 +186,6 @@ export default function LyricsIntelligencePanel({stems,duration,playhead,events,
    </div>)}
    {candidates.length>100&&<small>{candidates.length-100} additional candidates retained in session; inspect by scanning a shorter region or importing LRC.</small>}
   </div>}
-  <small className='v5LyricsFooter'>Review gate: local ASR proposes text; you approve; only then can a vocal-only ORBIT or SATURN event be added. No inference on the BEAT. No automatic mastering changes. SATURN is an optional wet-only moving reflection, not certified 5.1 or head tracking. {hasReviewed?'Musician review started.':'No lyrics approved yet.'}</small>
+  <small className='v5LyricsFooter'>Review gate: local ASR proposes text; you approve; only then can a vocal-only ORBIT or SATURN event be added. No inference on the BEAT. No automatic mastering changes. SATURN is an optional wet-only moving reflection, not certified 5.1 or head tracking. SATURN {saturnSettings.enabled?'ON':'OFF'}. {hasReviewed?'Musician review started.':'No lyrics approved yet.'}</small>
  </section>
 }
