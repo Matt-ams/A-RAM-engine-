@@ -327,3 +327,11 @@ html{scrollbar-gutter:stable}
 .v5BeatScanReport b{color:#e4f5fc}.v5BeatScanReport p{margin:8px 0}
 @media(max-width:850px){.v5DeckPipeline{grid-template-columns:1fr}.v5LyricRow{grid-template-columns:minmax(0,1fr)}.v5LyricActions{flex-direction:row;flex-wrap:wrap}.v5LyricActions button{flex:1 1 150px}}
 @media(max-width:620px){.v5Deck,.v5Lyrics{padding:14px}.v5DeckEventList{grid-template-columns:1fr}.v5DeckActions button,.v5LyricsButtons button{flex:1 1 100%}.v5LyricsImport input[type=text],.v5LyricsFile,.v5LyricsImport button{flex:1 1 100%}}
+
+/* V5.1: one-shot SPECTRAL outro motion, isolated from frozen ROOM core. */
+.saturnOutro{display:flex;flex-direction:column;gap:9px;margin:14px 0;padding:14px;border:1px solid #8a7eaa;border-radius:10px;background:linear-gradient(110deg,#28243c,#172738 68%,#10212d)}
+.saturnOutro button{max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;padding:14px 16px;border-radius:8px;border:1px solid #ba9dd8;color:#f2e6ff;background:#443253;font:800 11px/1.5 ui-monospace,monospace;letter-spacing:.06em;cursor:pointer}
+.saturnOutro button:hover:not(:disabled){background:#574269}
+.saturnOutro button:disabled{opacity:.44;cursor:not-allowed}
+.saturnOutro small{font:10px/1.6 ui-monospace,monospace;color:#bcc2da}
+.saturnEventEditor input[type=number]{width:100%;min-width:0;padding:9px 10px;border:1px solid #526b7e;border-radius:5px;background:#102032;color:#e5f2fa;font:11px ui-monospace,monospace}

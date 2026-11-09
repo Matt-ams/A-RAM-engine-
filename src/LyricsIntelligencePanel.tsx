@@ -1,10 +1,13 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {groupTranscriptWords,lyricToOrbit,parseTimedLyrics,type LyricCandidate,type TimestampWord} from './audio/lyricsIntelligence';
 import {ORBIT_MAX_EVENTS,type OrbitEvent,type OrbitStemMap,type OrbitSettings} from './audio/microOrbits';
+import {SATURN_MAX_EVENTS,SATURN_MAX_DURATION,type SaturnEvent,type SaturnSettings} from './audio/saturn';
 type Voice='lead'|'doubles'|'adlibs';
 type Props={stems:OrbitStemMap;duration:number;playhead:number;events:OrbitEvent[];
  setEvents:React.Dispatch<React.SetStateAction<OrbitEvent[]>>;
  setSettings:React.Dispatch<React.SetStateAction<OrbitSettings>>;
+ saturnEvents:SaturnEvent[];setSaturnEvents:React.Dispatch<React.SetStateAction<SaturnEvent[]>>;
+ saturnSettings:SaturnSettings;setSaturnSettings:React.Dispatch<React.SetStateAction<SaturnSettings>>;
  onSeek:(seconds:number)=>void;roomPending:boolean;originalLock:boolean;mode:'stereo'|'stems'};
 const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 async function mono16k(buffer:AudioBuffer,from:number,duration:number){
@@ -17,7 +20,7 @@ async function mono16k(buffer:AudioBuffer,from:number,duration:number){
  for(let i=0;i<result.length;i++)if(!Number.isFinite(result[i]))result[i]=0;
  return result;
 }
-export default function LyricsIntelligencePanel({stems,duration,playhead,events,setEvents,setSettings,onSeek,roomPending,originalLock,mode}:Props){
+export default function LyricsIntelligencePanel({stems,duration,playhead,events,setEvents,setSettings,saturnEvents,setSaturnEvents,saturnSettings,setSaturnSettings,onSeek,roomPending,originalLock,mode}:Props){
  const available=(['lead','doubles','adlibs'] as const).filter(k=>stems[k]?.buffer);
  const [voice,setVoice]=useState<Voice>('lead');
  const selectedVoice=available.includes(voice)?voice:available[0]??'lead';
@@ -34,6 +37,7 @@ export default function LyricsIntelligencePanel({stems,duration,playhead,events,
  const [progress,setProgress]=useState(0);
  const [scanRange,setScanRange]=useState<'window'|'track'>('window');
  const [hasReviewed,setHasReviewed]=useState(false);
+
  useEffect(()=>{
   if(loadedBuffer.current!==buffer){
    loadedBuffer.current=buffer;
@@ -114,6 +118,24 @@ export default function LyricsIntelligencePanel({stems,duration,playhead,events,
   setStatus('Approved phrase added to ORBIT. Adjust trajectory, start, duration and level in ORBIT editor.');
   setError('');
  };
+ const approveSaturn=(c:LyricCandidate)=>{
+  if(!c.reviewed||!c.text.trim()||roomPending||originalLock||mode!=='stems'||!buffer)return;
+  if(saturnEvents.length>=SATURN_MAX_EVENTS){setError('SATURN scene is full. Remove an old event first.');return}
+  if(saturnEvents.some(e=>e.source===selectedVoice&&Math.abs(e.at-c.start)<.15)){setError('SATURN already has a near-identical event. Edit its timing instead.');return}
+  const at=clamp(c.start,0,Math.max(0,duration-.2));
+  const availableEnd=Math.min(duration,buffer.duration);
+  const end=Math.min(availableEnd,Math.max(c.end,c.start+.4));
+  const length=Math.min(SATURN_MAX_DURATION,Math.max(.15,end-at));
+  if(length<.25){setError('No usable vocal audio remains at the selected timestamp.');return}
+  const event:SaturnEvent={id:Math.max(Date.now(),...saturnEvents.map(e=>e.id+1)),
+    source:selectedVoice,at:Math.round(at*100)/100,duration:Math.round(length*100)/100,path:'head-orbit-cw',level:.94};
+  setSaturnEvents(prev=>[...prev,event].sort((a,b)=>a.at-b.at));
+  setSaturnSettings(prev=>({...prev,enabled:true,wet:Math.max(.58,prev.wet),depth:Math.max(.84,prev.depth),
+    glide:Math.max(.88,prev.glide),trail:Math.max(.58,prev.trail)}));
+  onSeek(event.at);
+  setStatus('Reviewed phrase sent to SATURN HEAD ORBIT. Edit the path and duration in SATURN. Dry master preserved.');
+  setError('');
+ };
  const addManual=()=>{
   const content=manual.trim();if(!content||!buffer)return;
   const at=clamp(playhead,0,Math.max(0,duration-.4));
@@ -159,10 +181,11 @@ export default function LyricsIntelligencePanel({stems,duration,playhead,events,
     <div className='v5LyricActions'>
      <button onClick={()=>confirm(c.id)} disabled={c.reviewed||!c.text.trim()}>{c.reviewed?'REVIEWED ✓':'CONFIRM WORDS + TIMING'}</button>
      <button disabled={!c.reviewed||roomPending||originalLock||mode!=='stems'||events.length>=ORBIT_MAX_EVENTS} onClick={()=>approve(c)}>APPROVE → ORBIT</button>
+     <button disabled={!c.reviewed||roomPending||originalLock||mode!=='stems'||!buffer||saturnEvents.length>=SATURN_MAX_EVENTS} onClick={()=>approveSaturn(c)}>APPROVE → SATURN HEAD ORBIT</button>
     </div>
    </div>)}
    {candidates.length>100&&<small>{candidates.length-100} additional candidates retained in session; inspect by scanning a shorter region or importing LRC.</small>}
   </div>}
-  <small className='v5LyricsFooter'>Review gate: local ASR proposes text; you approve; only then can a vocal-only ORBIT event be added. No inference on the BEAT. No automatic mastering changes. {hasReviewed?'Musician review started.':'No lyrics approved yet.'}</small>
+  <small className='v5LyricsFooter'>Review gate: local ASR proposes text; you approve; only then can a vocal-only ORBIT or SATURN event be added. No inference on the BEAT. No automatic mastering changes. SATURN is an optional wet-only moving reflection, not certified 5.1 or head tracking. SATURN {saturnSettings.enabled?'ON':'OFF'}. {hasReviewed?'Musician review started.':'No lyrics approved yet.'}</small>
  </section>
 }

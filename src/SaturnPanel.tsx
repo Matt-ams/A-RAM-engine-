@@ -1,7 +1,7 @@
 import {useMemo,useState,type Dispatch,type SetStateAction} from 'react';
 import type {OrbitStemMap,OrbitSource,OrbitEvent,OrbitPath} from './audio/microOrbits';
 import {
- SATURN_MAX_EVENTS,scoutSaturn,saturnPathPoints,saturnDefaults,type SaturnEvent,type SaturnPath,type SaturnSettings
+ SATURN_MAX_EVENTS,SATURN_MAX_DURATION,scoutSaturn,saturnPathPoints,saturnDefaults,type SaturnEvent,type SaturnPath,type SaturnSettings
 } from './audio/saturn';
 
 type Props={
@@ -21,7 +21,9 @@ const routeOptions:Array<{value:SaturnPath;label:string}>=[
  {value:'rear-hover',label:'REAR · HOVER / RESIDENCE'},
  {value:'rear-loop-cw',label:'REAR ORBIT · CLOCKWISE'},
  {value:'rear-loop-ccw',label:'REAR ORBIT · COUNTERCLOCKWISE'},
- {value:'front-side-rear',label:'FRONT EDGE → SIDE → REAR'}
+ {value:'front-side-rear',label:'FRONT EDGE → SIDE → REAR'},
+ {value:'head-orbit-cw',label:'HEAD ORBIT · FRONT → LEFT → REAR → RIGHT → FRONT'},
+ {value:'head-orbit-ccw',label:'HEAD ORBIT · FRONT → RIGHT → REAR → LEFT → FRONT'}
 ];
 const point=([x,z]:[number,number])=>({x:230+x*79,y:102+z*37});
 const pathSvg=(p:Array<[number,number]>)=>p.map((pt,i)=>{const s=point(pt);return (i?'L':'M')+' '+s.x.toFixed(1)+' '+s.y.toFixed(1)}).join(' ');
@@ -53,6 +55,18 @@ export default function SaturnPanel({
    duration:source==='mix'?.42:.7,path:'slide-left-rear',level:.66
   };
   setEvents(xs=>[...xs,e].sort((a,b)=>a.at-b.at));setSelectedId(e.id);
+ };
+ const addOutroOrbit=()=>{
+  if(mode!=='stems'||!stems.lead?.buffer||stems.lead.mute||roomPending||originalLock||events.length>=SATURN_MAX_EVENTS)return;
+  const available=stems.lead.buffer.duration;
+  const at=Math.round(clamp(playhead,0,Math.max(0,Math.min(mix.duration,available)-.8))*100)/100;
+  const d=Math.min(5.8,Math.min(mix.duration,available)-at-.15);
+  if(d<.5)return;
+  const e:SaturnEvent={id:nextId(events),source:'lead',at,duration:Math.round(d*100)/100,path:'head-orbit-cw',level:.93};
+  setEvents(xs=>[...xs,e].sort((a,b)=>a.at-b.at));
+  setSelectedId(e.id);
+  setSettings(st=>({...st,enabled:true,wet:Math.max(.58,st.wet),depth:Math.max(.84,st.depth),glide:Math.max(.88,st.glide),trail:Math.max(.58,st.trail)}));
+  onSeek(at);
  };
  const legacyRoutes:Record<OrbitPath,SaturnPath>={
   'left-rear-right':'rear-left-right','right-rear-left':'rear-right-left',
@@ -171,6 +185,12 @@ export default function SaturnPanel({
     {legacyOrbitsActive&&<p className='saturnCaution'>V4.6 ORBITS IS ALSO ON: its existing wet events stay part of the earlier master. Turn those off to hear SATURN as the only motion layer; do not erase their events.</p>}
     {originalLock&&<p className='saturnCaution'>ORIGINAL LOCK is active: WAV export intentionally bypasses SATURN and all mastering. Disable lock only if you want to export processed audio.</p>}
     {roomPending&&<p className='saturnCaution'>STEMS CHANGED · REBUILD ROOM BUS before auditioning or scouting.</p>}
+    <div className='saturnOutro'>
+     <button type='button' onClick={addOutroOrbit} disabled={mode!=='stems'||!stems.lead?.buffer||stems.lead.mute||roomPending||originalLock||events.length>=SATURN_MAX_EVENTS||mix.duration<1}>
+      SPECTRAL OUTRO · HEAD ORBIT AT PLAYHEAD
+     </button>
+     <small>Place the playhead at the FIRST WORD of the outro, then adjust DURATION below. The dry lead, kick and snare stay anchored. This is a moving wet reflection; HRTF ON adds experimental front/rear cues, OFF keeps an audible stereo left/right circuit. Reserve tail time in the original file: this does NOT extend the WAV.</small>
+    </div>
     <div className='saturnActions'>
      <button disabled={roomPending||legacyEvents.length===0||events.length>=SATURN_MAX_EVENTS} onClick={copyLegacy}>COPY V4.6 EVENTS → SATURN</button>
      <button disabled={roomPending||events.length>=SATURN_MAX_EVENTS||mix.duration<.8} onClick={()=>scout(true)}>SCOUT BREAK · ±5s</button>
@@ -194,9 +214,11 @@ export default function SaturnPanel({
         step={.05} value={selected.at} onChange={e=>updateEvent({at:Number(e.currentTarget.value)})}/>
       </label>
       <label className='saturnSlider'><span>DURATION<b>{selected.duration.toFixed(2)}s</b></span>
-       <input aria-label='SATURN event duration' type='range' min={.15} max={3.2} step={.05}
+       <input aria-label='SATURN event duration' type='range' min={.15} max={SATURN_MAX_DURATION} step={.05}
         value={selected.duration} onChange={e=>updateEvent({duration:Number(e.currentTarget.value)})}/>
       </label>
+      <label>EXACT START (s)<input type='number' min={0} max={Math.max(0,mix.duration-.2)} step={.01} value={selected.at} onChange={e=>updateEvent({at:Math.round(clamp(Number(e.target.value)||0,0,Math.max(0,mix.duration-.2))*100)/100})}/></label>
+      <label>EXACT DURATION (s)<input type='number' min={.15} max={SATURN_MAX_DURATION} step={.01} value={selected.duration} onChange={e=>updateEvent({duration:Math.round(clamp(Number(e.target.value)||.15,.15,SATURN_MAX_DURATION)*100)/100})}/></label>
       <Slider name='EVENT GAIN' value={selected.level} onChange={v=>updateEvent({level:v})}/>
     </div>}
     <small>{audioHint} SCOUT only ADDS new moments. SATURN is opt-in and has its own event scene; the existing V4.6 Orbits list stays untouched.</small>

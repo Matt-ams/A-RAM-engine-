@@ -10,7 +10,7 @@ import {orbitVoicePriorityGain,type OrbitStemMap,type OrbitSource} from './micro
 
 export type SaturnPath =
  'slide-left-rear'|'slide-right-rear'|'rear-left-right'|'rear-right-left'|
- 'rear-hover'|'rear-loop-cw'|'rear-loop-ccw'|'front-side-rear';
+ 'rear-hover'|'rear-loop-cw'|'rear-loop-ccw'|'front-side-rear'|'head-orbit-cw'|'head-orbit-ccw';
 export type SaturnEvent={
  id:number;source:OrbitSource;at:number;duration:number;path:SaturnPath;level:number;
 };
@@ -19,6 +19,7 @@ export type SaturnSettings={
  hrtf:boolean;matchHrtf:boolean;voicePriority:number;
 };
 export const SATURN_MAX_EVENTS=48;
+export const SATURN_MAX_DURATION=6.5;
 export const saturnDefaults:SaturnSettings={
  enabled:false,wet:.38,depth:.82,glide:.74,trail:.44,
  hrtf:false,matchHrtf:true,voicePriority:.8
@@ -26,14 +27,14 @@ export const saturnDefaults:SaturnSettings={
 const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 const paths:SaturnPath[]=[
  'slide-left-rear','slide-right-rear','rear-left-right','rear-right-left',
- 'rear-hover','rear-loop-cw','rear-loop-ccw','front-side-rear'
+ 'rear-hover','rear-loop-cw','rear-loop-ccw','front-side-rear','head-orbit-cw','head-orbit-ccw'
 ];
 const sources:OrbitSource[]=['mix','lead','doubles','adlibs'];
 export function validSaturnEvent(x:unknown):x is SaturnEvent{
  if(!x||typeof x!=='object')return false;
  const e=x as Partial<SaturnEvent>;
  return Number.isSafeInteger(e.id)&&Number.isFinite(e.at)&&e.at!>=0&&
-  Number.isFinite(e.duration)&&e.duration!>=.15&&e.duration!<=3.2&&
+  Number.isFinite(e.duration)&&e.duration!>=.15&&e.duration!<=SATURN_MAX_DURATION&&
   sources.includes(e.source as OrbitSource)&&paths.includes(e.path as SaturnPath)&&
   Number.isFinite(e.level)&&e.level!>=0&&e.level!<=1;
 }
@@ -48,7 +49,13 @@ export function validSaturnSettings(x:unknown):x is SaturnSettings{
 export function saturnPathPoints(path:SaturnPath,depth:number,glide:number):Array<[number,number]>{
  const d=.65+1.9*clamp(depth,0,1);
  const x=.52+.45*clamp(glide,0,1);
+ // Stereo rear cues are perceptual hints, not guaranteed head-tracked motion.
+ // Head orbit is a full front-left-rear-right-front loop when HRTF is on,
+ // and a pronounced L/R pan when HRTF is off.
+ const ring=.75+.2*clamp(glide,0,1);
  switch(path){
+ case 'head-orbit-cw':return [[0,-.85],[-ring,-.62],[-ring,.22],[-.55*ring,d*.73],[0,d*.95],[ring*.8,d*.45],[ring,-.22],[.48*ring,-.68],[0,-.85]];
+ case 'head-orbit-ccw':return [[0,-.85],[ring,-.62],[ring,.22],[.55*ring,d*.73],[0,d*.95],[-ring*.8,d*.45],[-ring,-.22],[-.48*ring,-.68],[0,-.85]];
  case 'slide-left-rear':return [[-.2,-.6],[-x,-.22],[-.9*x,d*.52],[-.65*x,d]];
  case 'slide-right-rear':return [[.2,-.6],[x,-.22],[.9*x,d*.52],[.65*x,d]];
  case 'rear-left-right':return [[-x,d],[-.54*x,d*1.06],[0,d*1.14],[.65*x,d],[x,d*.93]];
@@ -157,7 +164,9 @@ async function renderWet(master:AudioBuffer,stems:OrbitStemMap,events:SaturnEven
   env.gain.setValueAtTime(1,Math.max(at+rise,at+d-fall));
   env.gain.linearRampToValueAtTime(0,at+d);
   const pre=ctx.createGain();
-  pre.gain.value=.105*clamp(event.level,0,1)*clamp(settings.wet,0,1);
+  const headOrbit=event.path==='head-orbit-cw'||event.path==='head-orbit-ccw';
+  const baseLevel=headOrbit ? .18 : .105;
+  pre.gain.value=baseLevel*clamp(event.level,0,1)*clamp(settings.wet,0,1);
   const depthDelay=ctx.createDelay(.25);
   depthDelay.delayTime.value=.028+settings.depth*.062;
   fragment.connect(high).connect(low).connect(env).connect(depthDelay).connect(pre);
@@ -168,7 +177,7 @@ async function renderWet(master:AudioBuffer,stems:OrbitStemMap,events:SaturnEven
     const time=at+d*k/slices;
     const gain=orbitVoicePriorityGain(lead,time,settings.voicePriority,event.source==='lead');
     if(k===0)pre.gain.setValueAtTime(pre.gain.value*gain,time);
-    else pre.gain.linearRampToValueAtTime(.105*event.level*settings.wet*gain,time);
+    else pre.gain.linearRampToValueAtTime(baseLevel*event.level*settings.wet*gain,time);
    }
   }
   const points=saturnPathPoints(event.path,settings.depth,settings.glide);
@@ -198,7 +207,7 @@ async function renderWet(master:AudioBuffer,stems:OrbitStemMap,events:SaturnEven
    tailPan.pan.value=clamp(points[points.length-1][0]*-.65,-.9,.9);
    env.connect(tailDelay).connect(trailFilter).connect(tailGain).connect(tailPan).connect(ctx.destination);
    // The tail is also wet, and subject to the same global amount.
-   tailGain.gain.value*=.105*event.level*settings.wet;
+   tailGain.gain.value*=baseLevel*event.level*settings.wet;
   }
   fragment.start(at,at,d);
  }
