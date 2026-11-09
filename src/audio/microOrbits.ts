@@ -4,10 +4,11 @@
  * No source separation, no generative AI, no Dolby Atmos certification.
  */
 export const ORBIT_MAX_EVENTS=48;
+export const ORBIT_MAX_DURATION=6.5;
 export type OrbitSource='mix'|'lead'|'doubles'|'adlibs';
 export type OrbitPath='left-rear-right'|'right-rear-left'|'rear-drift-left'|'rear-drift-right'|'front-left-right'|'front-right-left'|'front-to-rear-left'|'front-to-rear-right'|'rear-to-front-left'|'rear-to-front-right'|'full-orbit-cw'|'full-orbit-ccw';
 export type OrbitBand='detail'|'voice';
-export type OrbitEvent={id:number;source:OrbitSource;at:number;duration:number;path:OrbitPath;band:OrbitBand;level:number};
+export type OrbitEvent={id:number;source:OrbitSource;at:number;duration:number;path:OrbitPath;band:OrbitBand;level:number;note?:string};
 export type OrbitSettings={enabled:boolean;amount:number;rear:number;hrtf:boolean;motion?:number;trail?:number;voicePriority?:number;presence?:number};
 export type OrbitStem={buffer:AudioBuffer|null;mute:boolean;solo:boolean};
 export type OrbitStemMap=Partial<Record<Exclude<OrbitSource,'mix'>,OrbitStem>>;
@@ -19,7 +20,7 @@ const sources:OrbitSource[]=['mix','lead','doubles','adlibs'];
 export function validOrbitEvent(x:unknown):x is OrbitEvent{
  if(!x||typeof x!=='object')return false;
  const e=x as Partial<OrbitEvent>;
- return Number.isSafeInteger(e.id)&&Number.isFinite(e.at)&&e.at!>=0&&Number.isFinite(e.duration)&&e.duration!>=.12&&e.duration!<=2.4&&sources.includes(e.source as OrbitSource)&&paths.includes(e.path as OrbitPath)&&bands.includes(e.band as OrbitBand)&&Number.isFinite(e.level)&&e.level!>=0&&e.level!<=1;
+ return Number.isSafeInteger(e.id)&&Number.isFinite(e.at)&&e.at!>=0&&Number.isFinite(e.duration)&&e.duration!>=.12&&e.duration!<=ORBIT_MAX_DURATION&&(e.note===undefined||(typeof e.note==='string'&&e.note.length<=120))&&sources.includes(e.source as OrbitSource)&&paths.includes(e.path as OrbitPath)&&bands.includes(e.band as OrbitBand)&&Number.isFinite(e.level)&&e.level!>=0&&e.level!<=1;
 }
 export function validOrbitSettings(x:unknown):x is OrbitSettings{
  if(!x||typeof x!=='object')return false;
@@ -125,7 +126,7 @@ export function scoutVocalPhrases(mix:AudioBuffer,stems:OrbitStemMap,mode:'stems
    if(length>=.19 && peak>threshold*1.07){
     const prev=Math.max(noise,energy[Math.max(0,start-2)]||0,.001);
     const rise=Math.min(4,peak/prev);
-    const duration=Math.min(2.4,Math.max(.35,length+.14));
+    const duration=Math.min(ORBIT_MAX_DURATION,Math.max(.35,length+.14));
     // Require an audible change AND useful phrase length; do not just
     // pick the loudest beat or clip in the track.
     const preference=source==='adlibs'?1.65:source==='doubles'?1.35:source==='lead'?1.0:.38;
