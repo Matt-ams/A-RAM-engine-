@@ -6,10 +6,11 @@ import {pipeline,env} from '@huggingface/transformers';
 env.allowLocalModels=false;
 type Job={type:'transcribe';id:number;audio:Float32Array;sampleRate:16000;duration:number};
 type Chunk={text:string;timestamp:[number,number]};
-let decoder:Awaited<ReturnType<typeof pipeline>>|null=null;
+let decoder:unknown=null;
 async function getDecoder(){
  if(decoder)return decoder;
- decoder=await pipeline('automatic-speech-recognition','Xenova/whisper-tiny.en',{
+ const createAsr=pipeline as unknown as (task:string,model:string,options:Record<string,unknown>)=>Promise<unknown>;
+ decoder=await createAsr('automatic-speech-recognition','Xenova/whisper-tiny.en',{
   progress_callback:(progress:unknown)=>{
    if(progress&&typeof progress==='object'&&'progress'in progress){
     const p=progress as {progress?:number;file?:string};
