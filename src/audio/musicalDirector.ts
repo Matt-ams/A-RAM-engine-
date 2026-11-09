@@ -62,10 +62,18 @@ export function scoutMusicalDirector(
    const score=sourceWeight*(.68+.3*onsetStrength+.18*structuralChange)
     *(.6+.4*clamp(current/(upper+.001),0,1.4));
    const at=Math.max(0,i*hop-.075);
-   // Hold the accent, but allow its tail to finish rather than chopping to 350ms.
-   let last=i+4;
-   while(last<env.length-1 && last<i+23 && average(env,last,last+2)>gate*.56)last++;
-   const duration=clamp((last-i)*hop+.2,.55,2.3);
+   // Follow a WHOLE phrase instead of forcing micro-accents.
+   // Up to 6.5 s when the vocal stays active or contains <= .32 s pauses.
+   // No word/semantic detection: short stand-alone vocal tags stay short.
+   let last=i+4,gaps=0,latestAudible=i+3;
+   while(last<env.length-1 && last<i+79){
+    const e=average(env,last,last+2);
+    if(e>gate*.52){gaps=0;latestAudible=last;}
+    else gaps++;
+    if(gaps>=4)break;
+    last++;
+   }
+   const duration=clamp((latestAudible-i+1)*hop+.28,.55,6.5);
    hits.push({source,at,duration,score,section:0});
    lastHit=i;
   }

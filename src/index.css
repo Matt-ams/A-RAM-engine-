@@ -244,3 +244,19 @@ html{scrollbar-gutter:stable}
 .saturnPresetRow{display:flex;flex-wrap:wrap;gap:10px}
 .saturnPresetRow button{border:1px solid #c0a1d2;background:linear-gradient(125deg,#2f344e,#182f41);color:#f4e7fe;font:800 11px ui-monospace,monospace;letter-spacing:.07em;border-radius:7px;padding:11px 15px;cursor:pointer}
 .saturnPresetRow button:hover{background:linear-gradient(125deg,#414966,#244558)}
+
+/* TT2/TT4 usability repairs: long event captions and buttons must remain usable.
+   Preserve waveform clipping only inside the actual waveform viewport. */
+.orbitLab{overflow:visible}
+.orbitWorkbench,.orbitEditor,.orbitTimeline,.saturnLab,.saturnColumns,.saturnControls{min-width:0}
+.orbitActions,.saturnActions{display:flex;flex-wrap:wrap;align-items:stretch;gap:9px}
+.orbitActions button,.saturnActions button{flex:1 1 175px;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.45;text-align:center}
+.orbitEditorGrid label{min-width:0;overflow-wrap:anywhere}
+.orbitEditorGrid input[type=number],.orbitEditorGrid input[type=text]{display:block;width:100%;min-width:0;margin-top:6px;padding:9px 10px;color:#e0edf2;background:#101922;border:1px solid #556579;border-radius:5px;font:11px ui-monospace,monospace}
+.orbitTimeline{overflow:visible;min-width:0}
+.orbitMiniWave{overflow:hidden}
+.orbitTrack{margin-left:15px;margin-right:15px}
+.orbitTrack .orbitMarker:first-child{max-width:22px}
+.saturnEventEditor,.saturnControlGrid{min-width:0}
+.saturnEventEditor select{max-width:100%;min-width:0}
+@media(max-width:680px){.orbitActions button,.saturnActions button{flex:1 1 100%}.orbitEditorGrid{grid-template-columns:minmax(0,1fr)}}

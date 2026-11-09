@@ -1,7 +1,7 @@
 import {useMemo,useState,type Dispatch,type SetStateAction} from 'react';
 import {scoutMusicalDirector} from './audio/musicalDirector';
 import {
- orbitEventSources,scoutMicroOrbits,scoutVocalPhrases,ORBIT_MAX_EVENTS,orbitPathPositions,type OrbitEvent,type OrbitSettings,
+ orbitEventSources,scoutMicroOrbits,scoutVocalPhrases,ORBIT_MAX_EVENTS,ORBIT_MAX_DURATION,orbitPathPositions,type OrbitEvent,type OrbitSettings,
  type OrbitSource,type OrbitPath,type OrbitBand,type OrbitStemMap
 } from './audio/microOrbits';
 
@@ -203,11 +203,14 @@ export default function MicroOrbitsPanel({mix,mode,stems,events,setEvents,settin
     <label>ROUTE<select aria-label='Orbit event route' value={selected.path} onChange={e=>updateEvent({path:e.target.value as OrbitPath})}>{paths.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
     <label>DETAIL BAND<select aria-label='Orbit event band' value={selected.band} onChange={e=>updateEvent({band:e.target.value as OrbitBand})}><option value='detail'>BRIGHT DETAIL</option><option value='voice'>VOCAL PRESENCE</option></select></label>
     <label>START · {selected.at.toFixed(2)}s<input aria-label='Orbit event time' type='range' min='0' max={Math.max(.1,mix.duration-.15)} step='.05' value={selected.at} onChange={e=>updateEvent({at:Number(e.target.value)})}/></label>
-    <label>DURATION · {selected.duration.toFixed(2)}s<input aria-label='Orbit event duration' type='range' min='.15' max='2.40' step='.05' value={selected.duration} onChange={e=>updateEvent({duration:Number(e.target.value)})}/></label>
+    <label>DURATION · {selected.duration.toFixed(2)}s (MAX {ORBIT_MAX_DURATION}s)<input aria-label='Orbit event duration' type='range' min='.15' max={ORBIT_MAX_DURATION} step='.05' value={selected.duration} onChange={e=>updateEvent({duration:Number(e.target.value)})}/></label>
     <label>EVENT LEVEL · {Math.round(selected.level*100)}%<input aria-label='Orbit event level' type='range' min='0' max='100' step='5' value={selected.level*100} onChange={e=>updateEvent({level:Number(e.target.value)/100})}/></label>
+    <label>EXACT START (SECONDS)<input aria-label='Orbit exact event start' type='number' min='0' max={Math.max(0,mix.duration-.15)} step='.01' value={selected.at} onChange={e=>updateEvent({at:Math.round(clamp(Number(e.target.value)||0,0,Math.max(0,mix.duration-.15))*100)/100})}/></label>
+    <label>EXACT DURATION (SECONDS)<input aria-label='Orbit exact event duration' type='number' min='.12' max={ORBIT_MAX_DURATION} step='.01' value={selected.duration} onChange={e=>updateEvent({duration:Math.round(clamp(Number(e.target.value)||.12,.12,ORBIT_MAX_DURATION)*100)/100})}/></label>
+    <label>PHRASE NOTE (OPTIONAL)<input aria-label='Orbit optional phrase note' type='text' maxLength={120} placeholder='Nevermind / yeah yeah / full line…' value={selected.note??''} onChange={e=>updateEvent({note:e.target.value})}/></label>
    </div>
    <button className='orbitRemove' onClick={()=>{setEvents(es=>es.filter(e=>e.id!==selected.id));setSelectedId(null)}}>REMOVE SELECTED DETAIL</button>
-  </div>:<div className='orbitEmpty'>No orbit events. Place a short vocal accent at the playhead, then choose a real FRONT / REAR route, or let SMART SCOUT suggest moments.</div>}
+  </div>:<div className='orbitEmpty'>No orbit events. Let MUSICAL DIRECTOR propose a whole-song scene, then extend or fine-tune any phrase without changing your original BEAT, LEAD or ROOM.</div>}
   <div className='orbitFooter'>
    <span>{settings.enabled?'ON · ORBIT WET LAYER INCLUDED IN NEXT MASTER RENDER':'OFF · ORIGINAL AUDIO PIPELINE BYPASSED EXACTLY'}</span>
    {originalLock&&<b>ORIGINAL LOCK IS ON — ORBITS WILL NOT ENTER LOCKED EXPORT</b>}
