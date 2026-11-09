@@ -14,7 +14,8 @@ function voice(out,t0,len,amplitude,freq){
 }
 for(const t of [3,16,28,44,62])voice(lead,t,.9,.27,220);
 for(const t of [10,32,53,69])voice(doubles,t,.78,.21,333);
-for(const t of [13,39,57])voice(adlibs,t,.57,.19,460);
+for(const t of [13,57])voice(adlibs,t,.57,.19,460);
+voice(adlibs,39,4.15,.19,460); // phrase-length onset rather than a one-word accent
 for(let i=0;i<beat.length;i++){const t=i/sr,step=t%0.52;beat[i]=step<.065?.16*Math.sin(2*Math.PI*75*step)*(1-step/.065):0;}
 const mix=new Float32Array(beat.length);
 for(let i=0;i<mix.length;i++)mix[i]=beat[i]+lead[i]+doubles[i]+adlibs[i];
@@ -27,7 +28,8 @@ assert.ok(events.some(e=>e.at<16),'first section covered');
 assert.ok(events.some(e=>e.at>32&&e.at<55),'middle sections covered');
 assert.ok(events.some(e=>e.at>55),'late section covered');
 assert.ok(events.every(e=>e.source==='lead'||e.source==='doubles'||e.source==='adlibs'),'never the beat');
-assert.ok(events.every(e=>e.at>=0&&e.at+e.duration<duration+1&&e.duration>=.55&&e.duration<=2.3));
+assert.ok(events.some(e=>e.source==='adlibs'&&e.duration>=3),'retain a continuous multi-second vocal phrase');
+assert.ok(events.every(e=>e.at>=0&&e.at+e.duration<duration+1&&e.duration>=.55&&e.duration<=6.5));
 assert.deepEqual(events,director.scoutMusicalDirector(source,stems,'stems',15),'deterministic director');
 assert.deepEqual(events.length<=15,true);
 assert.deepEqual(mix,reference,'source untouched');
