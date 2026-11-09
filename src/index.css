@@ -260,3 +260,70 @@ html{scrollbar-gutter:stable}
 .saturnEventEditor,.saturnControlGrid{min-width:0}
 .saturnEventEditor select{max-width:100%;min-width:0}
 @media(max-width:680px){.orbitActions button,.saturnActions button{flex:1 1 100%}.orbitEditorGrid{grid-template-columns:minmax(0,1fr)}}
+
+/* A$RAM ENGINE V5.0 — spatial intelligence command surface.
+   One release shell, no hidden audio changes or invented meter readings. */
+.v5Deck,.v5Lyrics{margin:24px 0;border:1px solid #47606c;border-radius:17px;padding:21px;background:linear-gradient(140deg,#121f29 0%,#0c111b 50%,#15141d 100%);color:#e7f0f3;box-shadow:0 18px 50px #0005;min-width:0}
+.v5Deck *,.v5Lyrics *,.v5BeatAudit *{box-sizing:border-box}
+.v5DeckHeading,.v5LyricsHead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+.v5DeckHeading small,.v5LyricsHead small{color:#90b9c5;letter-spacing:.18em;font:800 10px/1.6 ui-monospace,monospace}
+.v5DeckHeading h2,.v5LyricsHead h2{font:850 clamp(24px,3.6vw,44px)/1.1 ui-sans-serif,sans-serif;letter-spacing:.075em;margin:8px 0 10px;color:#f0f6f7}
+.v5DeckHeading h2 em{font-style:normal;font-weight:450;color:#88d6df;margin-left:6px}
+.v5DeckHeading p,.v5LyricsHead p{font:11px/1.65 ui-monospace,monospace;color:#9db5c1;letter-spacing:.04em;margin:0}
+.v5PreviewTag{font:800 10px ui-monospace,monospace;letter-spacing:.13em;color:#bee0e9;background:#1c3b47;border:1px solid #729eb0;border-radius:99px;padding:11px 16px;white-space:nowrap}
+.v5DeckPipeline{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.v5DeckPipeline>div{border:1px solid #344754;border-radius:11px;padding:15px;display:flex;flex-direction:column;gap:8px;background:#14232db8;min-width:0}
+.v5DeckPipeline span{font:700 9px ui-monospace,monospace;color:#7fa6b7;letter-spacing:.1em}
+.v5DeckPipeline b{font:750 14px ui-sans-serif,sans-serif;color:#e0f3f6}
+.v5DeckPipeline small{font:10px/1.5 ui-monospace,monospace;color:#9eb4bf}
+.v5DeckActions,.v5LyricsButtons{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.v5DeckActions button,.v5LyricsButtons button,.v5LyricsImport button,.v5LyricActions button,.v5LyricTime button,.v5BeatAudit button{flex:1 1 220px;min-width:0;border:1px solid #6096a5;border-radius:9px;background:#24515c;color:#e4f8fa;padding:12px 14px;cursor:pointer;font:800 10px/1.55 ui-monospace,monospace;letter-spacing:.05em;white-space:normal;overflow-wrap:anywhere}
+.v5DeckActions button:first-child{background:#192c39;border-color:#5c7480}
+.v5DeckActions button:hover:not(:disabled),.v5LyricsButtons button:hover:not(:disabled),.v5LyricActions button:hover:not(:disabled){background:#316a78}
+.v5DeckActions button:disabled,.v5LyricsButtons button:disabled,.v5LyricActions button:disabled,.v5LyricsImport button:disabled,.v5LyricTime button:disabled{opacity:.48;cursor:not-allowed}
+.v5DeckMeters{display:flex;flex-wrap:wrap;gap:8px;margin-top:17px}
+.v5DeckMeters span{font:800 9px/1.4 ui-monospace,monospace;letter-spacing:.06em;border:1px solid #475761;padding:7px 10px;border-radius:5px}
+.v5DeckMeters .v5Ok{color:#b5e4d7;border-color:#356b65;background:#18332f}.v5DeckMeters .v5Warn{color:#f3d39e;border-color:#705938;background:#342919}.v5DeckMeters .v5Off{color:#8da3b2;background:#171c25;border-color:#353f4e}
+.v5DeckAudit{margin-top:17px;border-top:1px solid #304450;padding-top:14px}
+.v5DeckAudit summary{font:800 11px/1.8 ui-monospace,monospace;letter-spacing:.03em;cursor:pointer;color:#a5d9e1}
+.v5DeckAudit p{font:10px/1.65 ui-monospace,monospace;color:#a0b1bd;max-width:850px}
+.v5DeckEventList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:310px;overflow:auto}
+.v5DeckEventList button{display:flex;align-items:center;gap:12px;min-width:0;text-align:left;background:#12212c;border:1px solid #344654;border-radius:6px;color:#aabfcb;cursor:pointer;padding:9px}
+.v5DeckEventList b{white-space:nowrap;color:#d2e4eb;font:700 10px ui-monospace,monospace}
+.v5DeckEventList span{font:10px/1.45 ui-monospace,monospace;overflow-wrap:anywhere}
+.v5DeckEventList .ready{border-left:3px solid #6ba995}.v5DeckEventList .warning{border-left:3px solid #c9a26b}.v5DeckEventList .off{border-left:3px solid #67717f}
+.v5Lyrics{border-color:#57546e;background:linear-gradient(145deg,#181827,#101521 62%,#0f1e29)}
+.v5LyricsHead{margin-bottom:10px}
+.v5LyricsHead h2{font-size:clamp(22px,3.2vw,35px);letter-spacing:.065em}
+.v5LyricsHead p{max-width:740px}
+.v5LyricsCounts{display:grid;grid-template-columns:auto auto;gap:3px 10px;align-items:center;border:1px solid #4c536b;padding:11px 14px;border-radius:10px;color:#a7bac9}
+.v5LyricsCounts b{font:800 18px ui-monospace,monospace;color:#e0cffa}.v5LyricsCounts span{font:9px ui-monospace,monospace}
+.v5LyricsWarnings,.v5LyricsNotice,.v5LyricsError,.v5LyricsFooter{font:11px/1.7 ui-monospace,monospace;display:block;border:1px solid #544b57;padding:11px 13px;border-radius:8px;background:#28212b;color:#e1c3c7}
+.v5LyricsNotice{border-color:#405568;background:#1b2633;color:#b0c5d1}
+.v5LyricsError{border-color:#9c4e52;background:#341c27;color:#ffd3d3}
+.v5LyricsFooter{background:transparent;border-color:#364556;color:#a7b8c5;margin-top:12px}
+.v5LyricsControls{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin:15px 0}
+.v5LyricsControls label{display:flex;flex-direction:column;gap:6px;color:#a7c0c9;font:700 10px ui-monospace,monospace;flex:1 1 190px}
+.v5LyricsControls select,.v5LyricsControls input{width:100%;max-width:100%;border:1px solid #597184;border-radius:7px;background:#162837;color:#deedf4;padding:9px;min-width:0}
+.v5LyricsControls input[type=range]{padding:0;accent-color:#b9a5d8}
+.v5LyricsImport{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin:16px 0}
+.v5LyricsImport input[type=text]{flex:2 1 230px;min-width:0;padding:11px;border:1px solid #536376;border-radius:8px;color:#eff8f9;background:#111e2a;font:11px/1.5 ui-monospace,monospace}
+.v5LyricsFile{flex:1 1 220px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:13px;border-radius:8px;border:1px dashed #8295aa;color:#bed0de;text-align:center;font:800 10px/1.5 ui-monospace,monospace}
+.v5LyricsFile input{display:none}
+.v5LyricsProgress{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-top:1px solid #394254;padding:11px 0;color:#b6c8d8;font:11px/1.5 ui-monospace,monospace}
+.v5LyricsProgress progress{width:180px;max-width:100%;accent-color:#a0d4de}
+.v5LyricsList{display:flex;flex-direction:column;gap:11px;max-height:720px;overflow:auto;margin:12px 0;padding:5px}
+.v5LyricRow{display:grid;grid-template-columns:minmax(140px,.52fr) minmax(220px,1.7fr) minmax(155px,.75fr);gap:12px;border:1px solid #3e4e63;background:#141f2d;border-radius:9px;padding:13px;min-width:0}
+.v5LyricTime{display:flex;flex-direction:column;gap:7px;min-width:0}
+.v5LyricTime label,.v5LyricText{display:flex;flex-direction:column;gap:5px;color:#9cb4c8;font:700 9px ui-monospace,monospace;min-width:0}
+.v5LyricTime input,.v5LyricText textarea{width:100%;min-width:0;border:1px solid #506277;border-radius:6px;background:#0c1724;color:#e6eef7;padding:8px 9px;font:11px/1.6 ui-monospace,monospace}
+.v5LyricText textarea{resize:vertical;min-height:90px}
+.v5LyricActions{display:flex;flex-direction:column;gap:8px}
+.v5LyricTime button,.v5LyricActions button{flex:0 0 auto;padding:10px 8px;font-size:9px}
+.v5LyricActions button:first-child{background:#293349;border-color:#777393}
+.v5BeatAudit{border:1px solid #365568;border-radius:9px;padding:12px;margin:12px 0;background:#152331}
+.v5BeatAudit>button{display:block;max-width:100%}
+.v5BeatScanReport{margin:12px 0 0;border-top:1px solid #435d6c;padding-top:11px;font:11px/1.7 ui-monospace,monospace;color:#c4d6df}
+.v5BeatScanReport b{color:#e4f5fc}.v5BeatScanReport p{margin:8px 0}
+@media(max-width:850px){.v5DeckPipeline{grid-template-columns:1fr}.v5LyricRow{grid-template-columns:minmax(0,1fr)}.v5LyricActions{flex-direction:row;flex-wrap:wrap}.v5LyricActions button{flex:1 1 150px}}
+@media(max-width:620px){.v5Deck,.v5Lyrics{padding:14px}.v5DeckEventList{grid-template-columns:1fr}.v5DeckActions button,.v5LyricsButtons button{flex:1 1 100%}.v5LyricsImport input[type=text],.v5LyricsFile,.v5LyricsImport button{flex:1 1 100%}}

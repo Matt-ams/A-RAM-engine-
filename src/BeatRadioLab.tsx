@@ -4,6 +4,7 @@
  */
 import {useEffect,useState} from 'react';
 import {spectralDenoise,type DenoiseSettings} from './audio/denoise';
+import {scanBeatIntegrity,type BeatIntegrity} from './audio/beatIntegrity';
 
 type Props={beat:AudioBuffer|null};
 type Preview={original:string;clean:string;removed:string;export:string;removedDb:number;monitorGainDb:number;auditionAt:number};
@@ -42,7 +43,8 @@ export default function BeatRadioLab({beat}:Props){
  const [start,setStart]=useState(0),[end,setEnd]=useState(0),[auditionAt,setAuditionAt]=useState(0);
  const [reduction,setReduction]=useState(.2),[preserve,setPreserve]=useState(.9);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[preview,setPreview]=useState<Preview|null>(null);
- useEffect(()=>{setPreview(null);setError('')},[beat]);
+ const [integrity,setIntegrity]=useState<BeatIntegrity|null>(null);
+ useEffect(()=>{setPreview(null);setError('');setIntegrity(null)},[beat]);
  useEffect(()=>()=>{if(preview)for(const key of ['original','clean','removed','export'] as const)URL.revokeObjectURL(preview[key])},[preview]);
  const prepare=async()=>{
   if(!beat||busy)return;
@@ -73,6 +75,15 @@ export default function BeatRadioLab({beat}:Props){
   <h3 style={{margin:'0 0 8px'}}>BEAT RADIO LAB · TT4</h3>
   <p style={{fontSize:12,color:'#b8cbd4',margin:'0 0 12px'}}>Isolated diagnostic on the ORIGINAL BEAT stem. It will NOT modify the loaded BEAT, original master, ROOM, ORBIT or SATURN. A radio-like artifact baked into the Suno instrumental may not be removable without damaging the music.</p>
   {!beat?<small>Load the original BEAT stem above to enable this test.</small>:<>
+   <div className='v5BeatAudit'>
+    <button type='button' disabled={busy} onClick={()=>{if(!beat)return;setIntegrity(scanBeatIntegrity(beat));}}>RUN V5 BEAT INTEGRITY SCAN · NO DSP</button>
+    {integrity&&<div className='v5BeatScanReport' role='status'>
+     <b>ORIGINAL BEAT · {integrity.sampleRate/1000} kHz · PEAK {integrity.peakDb.toFixed(1)} dBFS · NEAR-CLIPPED {integrity.clippedPercent.toFixed(3)}%</b>
+     <p>Possible impulse positions: {integrity.impulseCandidates.length?integrity.impulseCandidates.slice(0,12).map(t=>t.toFixed(2)+'s').join(', '):'none found'}. Possible dropouts: {integrity.dropoutCandidates.length?integrity.dropoutCandidates.slice(0,12).map(t=>t.toFixed(2)+'s').join(', '):'none found'}.</p>
+     {integrity.warnings.map((msg,i)=><p key={i}>{msg}</p>)}
+     {[...integrity.impulseCandidates,...integrity.dropoutCandidates].length>0&&<button type='button' onClick={()=>setAuditionAt([...integrity.impulseCandidates,...integrity.dropoutCandidates].sort((a,b)=>a-b)[0])}>COMPARE FROM FIRST CANDIDATE</button>}
+    </div>}
+   </div>
    <p style={{fontSize:12,marginBottom:8}}>NOISE PROFILE REQUIRED: deliberately choose a passage with radio noise but NO kick, snare, hats, melody or vocal. No default noise section is assumed. If the radio effect overlaps the music throughout, this algorithm is NOT suitable for guaranteed restoration; compare versions of the Suno generation or investigate a source-specific repair.</p>
    <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
     <label>START (s)<input aria-label='BEAT noise profile start seconds' type='number' min='0' max={beat.duration} step='.1' value={start} onChange={e=>setStart(Number(e.target.value))} style={{width:85,marginLeft:5}}/></label>
