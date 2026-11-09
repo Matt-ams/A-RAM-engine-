@@ -37,7 +37,7 @@ export default function LyricsIntelligencePanel({stems,duration,playhead,events,
  const [progress,setProgress]=useState(0);
  const [scanRange,setScanRange]=useState<'window'|'track'>('window');
  const [hasReviewed,setHasReviewed]=useState(false);
- void saturnSettings;
+
  useEffect(()=>{
   if(loadedBuffer.current!==buffer){
    loadedBuffer.current=buffer;
