@@ -165,7 +165,7 @@ async function renderWet(master:AudioBuffer,stems:OrbitStemMap,events:SaturnEven
   env.gain.linearRampToValueAtTime(0,at+d);
   const pre=ctx.createGain();
   const headOrbit=event.path==='head-orbit-cw'||event.path==='head-orbit-ccw';
-  const baseLevel=headOrbit?.18:.105;
+  const baseLevel=headOrbit ? .18 : .105;
   pre.gain.value=baseLevel*clamp(event.level,0,1)*clamp(settings.wet,0,1);
   const depthDelay=ctx.createDelay(.25);
   depthDelay.delayTime.value=.028+settings.depth*.062;
