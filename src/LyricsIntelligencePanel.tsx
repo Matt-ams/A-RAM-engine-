@@ -143,7 +143,7 @@ export default function LyricsIntelligencePanel({stems,duration,playhead,events,
    <input type='text' placeholder='Or type a line you know and place it at the playhead…' value={manual} onChange={e=>setManual(e.target.value)} maxLength={400}/>
    <button onClick={addManual} disabled={!manual.trim()||!buffer}>+ MANUAL PHRASE</button>
   </div>
-  <div className='v5LyricsProgress' role='status'><span>{status}</span>{busy&&<progress max={100} value={progress}/>}</div>
+  <div className='v5LyricsProgress' role='status'><span>{status} · {scanRange==='track'?'TRACK MODE':'PLAYHEAD WINDOW MODE'}</span>{busy&&<progress max={100} value={progress}/>}</div>
   {recognizedWithoutTime&&<p className='v5LyricsNotice'>Untimed transcription (not auto-placed): {recognizedWithoutTime}</p>}
   {error&&<p className='v5LyricsError' role='alert'>{error}</p>}
   {!!candidates.length&&<div className='v5LyricsList'>
