@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && node tests/tt4-voice-scout.mjs && node tests/musical-director.mjs && node tests/v5-lyrics-review.mjs && vite build",
+    "build": "tsc --noEmit && node tests/tt4-voice-scout.mjs && node tests/musical-director.mjs && node tests/v5-lyrics-review.mjs && node tests/v5-beat-integrity.mjs && vite build",
     "preview": "vite preview",
     "test:dsp": "esbuild src/audio/dynamics.ts src/audio/denoise.ts src/audio/superboost.ts src/audio/studioQuality.ts --outdir=.dsp-test --format=esm --out-extension:.js=.mjs && node tests/dsp-smoke.mjs",
     "check": "tsc --noEmit && npm run test:dsp && vite build",
