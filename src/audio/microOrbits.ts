@@ -3,13 +3,16 @@
  * A small, filtered COPY of a short chosen fragment moves behind the listener.
  * No source separation, no generative AI, no Dolby Atmos certification.
  */
-export const ORBIT_MAX_EVENTS=48;
+export const ORBIT_MAX_EVENTS=75;
+export type OrbitDensityMode='subtle'|'cinematic'|'experimental';
+/** Density is a proposal budget, not a command to fill every slot. */
+export const ORBIT_DENSITY_LIMITS:Record<OrbitDensityMode,number>={subtle:20,cinematic:40,experimental:75};
 export const ORBIT_MAX_DURATION=6.5;
 export type OrbitSource='mix'|'lead'|'doubles'|'adlibs';
 export type OrbitPath='left-rear-right'|'right-rear-left'|'rear-drift-left'|'rear-drift-right'|'front-left-right'|'front-right-left'|'front-to-rear-left'|'front-to-rear-right'|'rear-to-front-left'|'rear-to-front-right'|'full-orbit-cw'|'full-orbit-ccw';
 export type OrbitBand='detail'|'voice';
 export type OrbitEvent={id:number;source:OrbitSource;at:number;duration:number;path:OrbitPath;band:OrbitBand;level:number;note?:string};
-export type OrbitSettings={enabled:boolean;amount:number;rear:number;hrtf:boolean;motion?:number;trail?:number;voicePriority?:number;presence?:number};
+export type OrbitSettings={enabled:boolean;amount:number;rear:number;hrtf:boolean;motion?:number;trail?:number;voicePriority?:number;presence?:number;densityMode?:OrbitDensityMode};
 export type OrbitStem={buffer:AudioBuffer|null;mute:boolean;solo:boolean};
 export type OrbitStemMap=Partial<Record<Exclude<OrbitSource,'mix'>,OrbitStem>>;
 export const orbitDefaults:OrbitSettings={enabled:false,amount:.52,rear:.78,hrtf:false,motion:.82,trail:.25,voicePriority:.58,presence:.72};
@@ -25,7 +28,7 @@ export function validOrbitEvent(x:unknown):x is OrbitEvent{
 export function validOrbitSettings(x:unknown):x is OrbitSettings{
  if(!x||typeof x!=='object')return false;
  const s=x as Partial<OrbitSettings>;
- return typeof s.enabled==='boolean'&&typeof s.hrtf==='boolean'&&Number.isFinite(s.amount)&&s.amount!>=0&&s.amount!<=1&&Number.isFinite(s.rear)&&s.rear!>=0&&s.rear!<=1&&(s.motion===undefined||Number.isFinite(s.motion)&&s.motion>=0&&s.motion<=1)&&(s.trail===undefined||Number.isFinite(s.trail)&&s.trail>=0&&s.trail<=1)&&(s.voicePriority===undefined||Number.isFinite(s.voicePriority)&&s.voicePriority>=0&&s.voicePriority<=1)&&(s.presence===undefined||Number.isFinite(s.presence)&&s.presence>=0&&s.presence<=1);
+ return typeof s.enabled==='boolean'&&typeof s.hrtf==='boolean'&&Number.isFinite(s.amount)&&s.amount!>=0&&s.amount!<=1&&Number.isFinite(s.rear)&&s.rear!>=0&&s.rear!<=1&&(s.motion===undefined||Number.isFinite(s.motion)&&s.motion>=0&&s.motion<=1)&&(s.trail===undefined||Number.isFinite(s.trail)&&s.trail>=0&&s.trail<=1)&&(s.voicePriority===undefined||Number.isFinite(s.voicePriority)&&s.voicePriority>=0&&s.voicePriority<=1)&&(s.presence===undefined||Number.isFinite(s.presence)&&s.presence>=0&&s.presence<=1)&&(s.densityMode===undefined||Object.prototype.hasOwnProperty.call(ORBIT_DENSITY_LIMITS,s.densityMode));
 }
 export function orbitEventSources(stems:OrbitStemMap, mode:'stems'|'stereo'):{source:OrbitSource;buffer:AudioBuffer}[]{
  const anySolo=Object.values(stems).some(x=>x?.buffer&&x.solo);
