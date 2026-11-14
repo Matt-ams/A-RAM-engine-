@@ -38,7 +38,7 @@ export default function V5ControlCenter({duration,sourceReady,processedReady,bus
   <details className='v5DeckAudit'>
    <summary>AUDIT MOTION ROUTING · {ready} READY / {risk} NEED REVIEW / {audit.length-ready-risk} BYPASSED</summary>
    <p>This checks event routing against source availability, mute/SOLO, time bounds and loudness heuristics. It does not prove that an effect is perceptible in the exported audio.</p>
-   {audit.length?<div className='v5DeckEventList'>{audit.slice(0,48).map(e=><button key={e.id} onClick={()=>onSeek(e.at)} title='Seek to inspect event in playback' className={e.state==='ready'?'ready':e.state==='risk'?'warning':'off'}><b>{e.at.toFixed(2)}s</b><span>{e.reason}</span></button>)}</div>:<small>No movements are active until you explicitly add or approve them.</small>}
+   {audit.length?<div className='v5DeckEventList'>{audit.slice(0,75).map(e=><button key={e.id} onClick={()=>onSeek(e.at)} title='Seek to inspect event in playback' className={e.state==='ready'?'ready':e.state==='risk'?'warning':'off'}><b>{e.at.toFixed(2)}s</b><span>{e.reason}</span></button>)}</div>:<small>No movements are active until you explicitly add or approve them.</small>}
   </details>
  </section>
 }
