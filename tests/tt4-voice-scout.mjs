@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 const src=fs.readFileSync('src/audio/microOrbits.ts','utf8');
 const {code}=await transform(src,{loader:'ts',format:'esm'});
 const audio=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
-assert.equal(audio.ORBIT_MAX_EVENTS,48);
+assert.equal(audio.ORBIT_MAX_EVENTS,75);
 const sr=8000,duration=55;
 const pcm=new Float32Array(duration*sr);
 const phrases=[{at:2.8,len:1.05},{at:10.25,len:.65},{at:23.5,len:1.38},{at:42,len:1.65}];
