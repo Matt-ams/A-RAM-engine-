@@ -2,7 +2,7 @@
  * Deterministic STEM-driven event selection across a complete song.
  * No transcript, no source separation, no beat movement. Keeps dry mix anchored.
  */
-import {orbitEventSources,type OrbitEvent,type OrbitStemMap,type OrbitSource,type OrbitPath} from './microOrbits';
+import {orbitEventSources,ORBIT_MAX_EVENTS,type OrbitEvent,type OrbitStemMap,type OrbitSource,type OrbitPath} from './microOrbits';
 const clamp=(n:number,a:number,b:number)=>Math.max(a,Math.min(b,n));
 type Hit={source:OrbitSource;at:number;duration:number;score:number;section:number};
 const routes:Record<'lead'|'doubles'|'adlibs',OrbitPath[]>={
@@ -37,7 +37,7 @@ export function scoutMusicalDirector(
  if(mode!=='stems'||mix.duration<1)return [];
  const voices=orbitEventSources(stems,mode);
  if(!voices.length)return [];
- const requested=clamp(Math.trunc(count)||18,1,24);
+ const requested=clamp(Math.trunc(count)||18,1,ORBIT_MAX_EVENTS);
  const hop=.08, mixEnv=envelope(mix,hop);
  const hits:Hit[]=[];
  for(const {source,buffer} of voices){
